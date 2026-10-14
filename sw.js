@@ -1,5 +1,5 @@
-const SHELL_CACHE = "bosque-shell-v22";
-const RUNTIME_CACHE = "bosque-runtime-v22";
+const SHELL_CACHE = "bosque-shell-v24";
+const RUNTIME_CACHE = "bosque-runtime-v24";
 const APP_SHELL = [
     "./site-config.js",
     "./assets/forest-fallback.svg",
@@ -16,6 +16,7 @@ const APP_SHELL = [
     "./compra.html",
     "./app.js",
     "./render-books.js",
+    "./search-quality.js",
     "./fantasy-effects.js",
     "./account-api.js",
     "./account-panel.js",
@@ -27,6 +28,11 @@ const APP_SHELL = [
     "./open-library-api.js",
     "./pwa.js",
     "./site-data.js",
+    "./data/editorial.js",
+    "./data/books.js",
+    "./data/authors.js",
+    "./data/glossary.js",
+    "./data/themes.js",
     "./recommendation-engine.js",
     "./manifest.webmanifest",
     "./bosque-icon.svg",

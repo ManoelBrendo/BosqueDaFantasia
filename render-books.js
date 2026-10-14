@@ -1,3 +1,5 @@
+import { getSourceLabel } from "./search-quality.js";
+
 export const createBookRenderers = ({ escapeHtml, isFavorite, getReadingStatus }) => {
     const buildBookChipRowMarkup = (book) => {
         const chips = [
@@ -44,6 +46,7 @@ export const createBookRenderers = ({ escapeHtml, isFavorite, getReadingStatus }
                     <div class="book-meta">
                         <span>${escapeHtml(book.author)}</span>
                         <span>${escapeHtml(book.year)}</span>
+                        <span class="book-origin">${escapeHtml(getSourceLabel(book.resultSource || "curated"))}</span>
                     </div>
                 </div>
             </a>
@@ -88,6 +91,7 @@ export const createBookRenderers = ({ escapeHtml, isFavorite, getReadingStatus }
                     <div class="book-meta">
                         <span>${escapeHtml(book.year)}</span>
                         <span>${book.editionCount ? `${escapeHtml(book.editionCount)} edicoes` : "Acervo geral"}</span>
+                        <span class="book-origin">${escapeHtml(getSourceLabel(book.resultSource))}</span>
                     </div>
                 </div>
             </a>

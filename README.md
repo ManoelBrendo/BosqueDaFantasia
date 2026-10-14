@@ -33,7 +33,10 @@ Se o terminal ainda nao reconhecer `node` ou `npm`, feche e abra o terminal nova
 - `catalog-api.js`: API da aplicacao para consulta ao acervo, com fallback para o banco local.
 - `library-db.js`: banco local em IndexedDB para consultas e dados essenciais.
 - `open-library-api.js`: cliente de rede da Open Library com enriquecimento editorial.
-- `site-data.js`: base editorial fixa do projeto.
+- `site-data.js`: ponto de compatibilidade que reexporta os dados editoriais por dominio.
+- `data/books.js`, `data/authors.js`, `data/glossary.js`, `data/themes.js`: dados editoriais separados; registros com status `rascunho` e `revisado` nao aparecem na interface publica.
+- `scripts/site-data-schema.mjs`: contrato e validacao de IDs, campos obrigatorios, status editorial e referencias entre trilhas e livros.
+- `docs/CONTRATO-DADOS-EDITORIAIS.md`: campos, regras para IDs e fluxo editorial.
 - `recommendation-engine.js`: motor de afinidade do Oraculo.
 - `site-config.js`: configuracao publica opcional da URL do backend remoto.
 - `pwa.js`: registro do modo instalavel e status PWA.

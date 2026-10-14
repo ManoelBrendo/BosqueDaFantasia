@@ -8,6 +8,15 @@ As imagens e o audio usados no site foram escolhidos com prioridade para licenca
 - Quando a Open Library nao retorna uma capa utilizavel, o site tenta imagens historicas de dominio publico ou licenca aberta no Wikimedia Commons.
 - Quando nenhuma opcao segura e encontrada, o site mantem a capa cerimonial do projeto em vez de usar uma imagem com direitos incertos.
 
+## Checklist para adicionar ou trocar uma imagem
+
+- [ ] Abrir a pagina original do arquivo e confirmar que corresponde a imagem usada.
+- [ ] Registrar nome, URL da pagina-fonte e URL do arquivo direto quando houver.
+- [ ] Conferir a licenca e o escopo territorial informado pela fonte; nao inferir permissao pelo nome do site.
+- [ ] Registrar atribuicao, autor, versao da licenca e requisitos de compartilhamento quando aplicavel.
+- [ ] Confirmar que recorte, adaptacao e uso no site sao permitidos pela licenca.
+- [ ] Se a licenca ou a origem nao puder ser confirmada, nao publicar a imagem; usar a capa cerimonial local.
+
 ## Imagens fixas da pagina
 
 ### 1. Rackham elves

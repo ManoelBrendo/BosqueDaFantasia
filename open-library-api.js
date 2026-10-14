@@ -1,4 +1,5 @@
 import { buildSearchQuery } from "./search-policy.js";
+import { rankAndDeduplicateBooks } from "./search-quality.js";
 const OPEN_LIBRARY_SEARCH_URL = "https://openlibrary.org/search.json";
 const OPEN_LIBRARY_COVER_SIZE = "M";
 const SEARCH_CACHE_PREFIX = "bosque-cache:portuguese-titles-v1:";
@@ -644,14 +645,14 @@ export class OpenLibraryCatalogApi {
         const url = this.buildUrl({ query: normalizedQuery, page, limit, filters }).toString();
 
         if (this.cache.has(url)) {
-            return this.cache.get(url);
+            return { ...this.cache.get(url), source: "network-cache" };
         }
 
         const cachedResult = readCachedSearch(url);
 
         if (cachedResult) {
             this.cache.set(url, cachedResult);
-            return cachedResult;
+            return { ...cachedResult, source: "network-cache" };
         }
 
         const response = await fetch(url, {
@@ -673,9 +674,9 @@ export class OpenLibraryCatalogApi {
             total: payload.numFound ?? payload.num_found ?? 0,
             page,
             hasMore: page * limit < (payload.numFound ?? payload.num_found ?? 0) && (payload.docs || []).length > 0,
-            books: (payload.docs || [])
+            books: rankAndDeduplicateBooks((payload.docs || [])
                 .filter((doc) => doc.title && doc.key)
-                .map((doc) => buildBookRecord(doc, this.placeholderCover))
+                .map((doc) => buildBookRecord(doc, this.placeholderCover)), normalizedQuery)
         };
 
         this.cache.set(url, result);

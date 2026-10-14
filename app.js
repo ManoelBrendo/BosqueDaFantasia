@@ -13,6 +13,7 @@ import {
 } from "./site-data.js?v=authors-pagination-v1";
 import { recommendBooksFromFavorites, recommendFromAnswers } from "./recommendation-engine.js?v=authors-pagination-v2";
 import { createBookRenderers } from "./render-books.js";
+import { getSourceLabel, rankAndDeduplicateBooks } from "./search-quality.js";
 
 const api = new BosqueCatalogApi();
 const defaultFilters = Object.fromEntries(advancedFilters.map((group) => [group.id, group.defaultValue]));
@@ -88,6 +89,7 @@ const elements = {
     affinityReset: getRequiredElement("affinity-reset"),
     affinityProgress: getRequiredElement("affinity-progress"),
     affinityExplore: getRequiredElement("affinity-explore"),
+    affinityHistory: getRequiredElement("affinity-history"),
     heroCarousel: getRequiredElement("hero-carousel"),
     heroCarouselImage: getRequiredElement("hero-carousel-image"),
     heroCarouselTitle: getRequiredElement("hero-carousel-title"),
@@ -163,6 +165,7 @@ const state = {
     registry: new Map(),
     activeLabel: DEFAULT_LABEL,
     affinityAnswers: new Map(),
+    recommendationHistory: [],
     filters: { ...defaultFilters },
     activeAuthorId: authorsCatalog[0]?.id || "",
     authorsPage: 1,
@@ -308,7 +311,8 @@ const serializeUiState = () => {
         filters: state.filters,
         activeAuthorId: state.activeAuthorId,
         glossaryQuery: state.glossaryQuery,
-        affinityAnswers: Object.fromEntries(state.affinityAnswers.entries())
+        affinityAnswers: Object.fromEntries(state.affinityAnswers.entries()),
+        recommendationHistory: state.recommendationHistory
     };
 };
 
@@ -341,6 +345,14 @@ const hydrateSavedState = (savedState) => {
 
     if (savedState.affinityAnswers && typeof savedState.affinityAnswers === "object") {
         state.affinityAnswers = new Map(Object.entries(savedState.affinityAnswers).filter(([, value]) => Boolean(value)));
+    }
+
+    if (Array.isArray(savedState.recommendationHistory)) {
+        state.recommendationHistory = savedState.recommendationHistory
+            .filter((entry) => entry && readingPaths.some((path) => path.id === entry.pathId)
+                && entry.answers && typeof entry.answers === "object"
+                && Number.isFinite(entry.savedAt))
+            .slice(0, 5);
     }
 };
 
@@ -701,6 +713,17 @@ const renderAffinityMap = (scoreMap = new Map()) => {
     }).join("");
 };
 
+const renderRecommendationHistory = () => {
+    elements.affinityHistory.innerHTML = state.recommendationHistory.length > 0
+        ? `<h4>Trilhas recentes</h4>${state.recommendationHistory.map((entry, index) => {
+            const path = readingPaths.find((item) => item.id === entry.pathId);
+            if (!path) return "";
+            const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(entry.savedAt);
+            return `<button class="affinity-history-button" type="button" data-recommendation-history="${index}">${escapeHtml(path.name)} <span>${escapeHtml(date)}</span></button>`;
+        }).join("")}`
+        : "";
+};
+
 const updatePurchasePanel = (bookInput) => {
     const book = normalizeBook(bookInput);
     state.currentBookId = book.id;
@@ -798,6 +821,19 @@ const renderAffinityRecommendation = () => {
         questions: affinityQuestions,
         paths: readingPaths
     });
+    const answers = Object.fromEntries(state.affinityAnswers.entries());
+    const recommendationSignature = JSON.stringify({ pathId: recommendation.bestPath.id, answers });
+    state.recommendationHistory = [
+        {
+            pathId: recommendation.bestPath.id,
+            answers,
+            savedAt: Date.now(),
+            signature: recommendationSignature
+        },
+        ...state.recommendationHistory.filter((entry) => entry.signature !== recommendationSignature)
+    ].slice(0, 5);
+    renderRecommendationHistory();
+    scheduleUiStateSave();
 
     const recommendedBooks = recommendation.bestPath.bookIds
         .map((bookId) => getRegisteredBook(bookId))
@@ -806,7 +842,7 @@ const renderAffinityRecommendation = () => {
     elements.affinityResult.dataset.state = "ready";
     elements.affinityResultName.textContent = recommendation.bestPath.name;
     elements.affinityResultDescription.textContent = recommendation.bestPath.description;
-    elements.affinityResultReason.textContent = `O Or\u00E1culo aproximou voc\u00EA de ${recommendation.chosenOptions.map((option) => option.label).join(", ")}.`;
+    elements.affinityResultReason.textContent = recommendation.reason;
     elements.affinityResultAlt.textContent = recommendation.runnerUp
         ? `Se quiser um segundo caminho sem perder o clima principal, experimente tamb\u00E9m ${recommendation.runnerUp.name.toLowerCase()}.`
         : "Esta leitura ficou bem definida; o Or\u00E1culo n\u00E3o encontrou uma segunda trilha t\u00E3o forte quanto a principal.";
@@ -867,7 +903,7 @@ const updateStatus = ({ loading = false, error = "" } = {}) => {
         return;
     }
 
-    elements.status.textContent = `O Or\u00E1culo revelou ${state.visibleBooks.length} livros visiveis a partir de ${state.rawResultBooks.length} carregados nesta rodada.`;
+    elements.status.textContent = `O Or\u00E1culo revelou ${state.visibleBooks.length} livros de ${getSourceLabel(state.lastSource)}, a partir de ${state.rawResultBooks.length} carregados nesta rodada.`;
     elements.loadMoreButton.hidden = state.rawResultBooks.length >= state.total;
 };
 
@@ -949,13 +985,19 @@ const runSearch = async ({ query, append = false, page = 1, label } = {}) => {
         });
 
         if (controller !== state.controller || controller.signal.aborted) return;
-        const nextBooks = sortBooksByTitle(result.books.map(normalizeBook));
+        const nextBooks = rankAndDeduplicateBooks(
+            result.books.map((book) => normalizeBook({ ...book, resultSource: result.source || "remote" })),
+            query
+        );
         registerBooks(nextBooks);
         state.query = query;
         state.page = page;
         state.total = result.total;
         state.lastSource = result.source || "remote";
-        state.rawResultBooks = [...new Map((append ? [...state.rawResultBooks, ...nextBooks] : nextBooks).map(book => [book.id, book])).values()];
+        state.rawResultBooks = rankAndDeduplicateBooks(
+            append ? [...state.rawResultBooks, ...nextBooks] : nextBooks,
+            query
+        );
 
         setActiveTheme(label || prettyQuery(query), query, { syncInput: !append });
         applyFiltersAndRender();
@@ -1301,6 +1343,7 @@ const initAffinityInteractions = () => {
         runSearch({ query, page: 1, append: false, label });
         scrollToSection(elements.oraculoSection);
     });
+
 };
 
 const initHeroCarousel = () => {
@@ -1337,6 +1380,17 @@ const initRecentInteractions = () => {
         setActiveTheme(recentLabel, recentQuery, { syncInput: true });
         runSearch({ query: recentQuery, page: 1, append: false, label: recentLabel });
         scrollToSection(elements.oraculoSection);
+    });
+
+    elements.affinityHistory.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-recommendation-history]");
+        if (!button) return;
+        const entry = state.recommendationHistory[Number(button.dataset.recommendationHistory)];
+        if (!entry) return;
+        state.affinityAnswers = new Map(Object.entries(entry.answers));
+        syncAffinityChoices();
+        renderAffinityRecommendation();
+        scheduleUiStateSave();
     });
 };
 
@@ -1522,6 +1576,7 @@ const init = async () => {
     renderFavorites();
     renderAffinityQuestions();
     syncAffinityChoices();
+    renderRecommendationHistory();
     initHeroCarousel();
     initGuidedTour();
     initOnboardingInteractions();

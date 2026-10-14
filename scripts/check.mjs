@@ -1,5 +1,10 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { bookRecords } from "../data/books.js";
+import { authorRecords } from "../data/authors.js";
+import { glossaryRecords } from "../data/glossary.js";
+import { readingPathRecords, topicThemeRecords } from "../data/themes.js";
+import { validateSiteData } from "./site-data-schema.mjs";
 
 const root = process.cwd();
 const htmlRefPattern = /\b(?:href|src)=["']([^"']+)["']/gi;
@@ -7,6 +12,13 @@ const importRefPattern = /\bimport\s+(?:[^"']+\s+from\s+)?["']([^"']+)["']/gi;
 const skipPrefixes = ["#", "http://", "https://", "mailto:", "tel:", "data:", "javascript:"];
 const checkedExtensions = new Set([".html", ".js", ".css", ".webmanifest"]);
 const failures = [];
+const dataErrors = validateSiteData({
+    bookRecords,
+    authorRecords,
+    glossaryRecords,
+    topicThemeRecords,
+    readingPathRecords
+});
 
 const walk = async (directory) => {
     const entries = await readdir(directory, { withFileTypes: true });
@@ -94,6 +106,12 @@ await Promise.all(files.map(checkFile));
 if (failures.length > 0) {
     console.error("Referencias locais ausentes:");
     failures.forEach((failure) => console.error(`- ${failure}`));
+    process.exit(1);
+}
+
+if (dataErrors.length > 0) {
+    console.error("Dados editoriais invalidos:");
+    dataErrors.forEach((error) => console.error(`- ${error}`));
     process.exit(1);
 }
 

@@ -37,7 +37,7 @@ export const recommendBooksFromFavorites = ({ favorites, books, limit = 3 }) => 
 
 export const recommendFromAnswers = ({ answers, questions, paths }) => {
     const scoreMap = new Map(paths.map((path) => [path.id, 0]));
-    const chosenOptions = [];
+    const pathSignals = new Map(paths.map((path) => [path.id, []]));
 
     questions.forEach((question) => {
         const selectedValue = answers.get(question.id);
@@ -52,25 +52,30 @@ export const recommendFromAnswers = ({ answers, questions, paths }) => {
             return;
         }
 
-        chosenOptions.push({
-            question: question.title,
-            label: selectedOption.label,
-            description: selectedOption.description
-        });
-
         Object.entries(selectedOption.scores || {}).forEach(([pathId, score]) => {
             scoreMap.set(pathId, (scoreMap.get(pathId) || 0) + score);
+            pathSignals.get(pathId)?.push({
+                question: question.title,
+                label: selectedOption.label,
+                score
+            });
         });
     });
 
     const rankedPaths = sortEntriesDescending(scoreMap.entries());
     const bestPath = paths.find((path) => path.id === rankedPaths[0]?.[0]) || paths[0];
     const runnerUp = paths.find((path) => path.id === rankedPaths[1]?.[0]) || null;
+    const matchedSignals = (pathSignals.get(bestPath?.id) || [])
+        .sort((left, right) => right.score - left.score);
+    const reason = matchedSignals.length > 0
+        ? `Esta trilha combina com suas escolhas ${matchedSignals.slice(0, 3).map((signal) => `“${signal.label}”`).join(", ")}.`
+        : "Esta trilha é o ponto de partida do Oráculo; responda às perguntas para personalizar a recomendação.";
 
     return {
         bestPath,
         runnerUp,
-        chosenOptions,
-        scoreMap
+        scoreMap,
+        matchedSignals,
+        reason
     };
 };

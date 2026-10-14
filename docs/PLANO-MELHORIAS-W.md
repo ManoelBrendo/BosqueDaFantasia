@@ -180,6 +180,8 @@ Checagem em W:
 
 ### Rodada 4: dados editoriais e curadoria
 
+**Status:** implementada; dados separados por dominio e validados no check.
+
 Objetivo:
 - Tornar a curadoria mais facil de manter e expandir.
 
@@ -191,13 +193,14 @@ Melhorias:
 - Incluir status editorial: rascunho, revisado, publicado.
 
 Checagem em W:
-- W1: definir quais dados mudam com mais frequencia.
-- W2: desenhar schema simples.
-- W3: migrar um dominio por vez.
-- W4: validar schema e renderizacao.
-- W5: registrar padrao para novas entradas.
+- W1-W2: dominios e campos obrigatorios documentados em `docs/CONTRATO-DADOS-EDITORIAIS.md`.
+- W3: livros, autores, glossario, temas e trilhas separados em `data/`; `site-data.js` mantido como barrel compatível.
+- W4: `scripts/check.mjs` valida campos, IDs estaveis/unicos, status e referencias de livros nas trilhas; itens nao publicados sao filtrados da interface.
+- W5: status `rascunho`, `revisado` e `publicado`, alem do checklist para imagens, documentados; testes automatizados, check de estrutura/schema e build passaram.
 
 ### Rodada 5: busca e recomendacao
+
+**Status:** implementada; relevancia, deduplicacao, origem e explicacao do Oraculo verificadas.
 
 Objetivo:
 - Melhorar qualidade de resultados e explicabilidade.
@@ -210,11 +213,10 @@ Melhorias:
 - Adicionar trilhas salvas ou historico de recomendacoes.
 
 Checagem em W:
-- W1: definir problema de relevancia.
-- W2: desenhar regra de ranking e explicacao.
-- W3: implementar com testes em consultas conhecidas.
-- W4: testar buscas comuns e termos sem resultado.
-- W5: ajustar pesos com base nos resultados.
+- W1-W2: ranking deterministico prioriza titulo exato/parcial, depois autor e temas; edicoes do mesmo titulo/autor sao deduplicadas.
+- W3: origem do catalogo indicada como Open Library ou cache local; curadoria identificada separadamente. Oraculo explica os sinais positivos da trilha escolhida.
+- W4: historico local mantem ate cinco recomendacoes e permite restaurar respostas. Testes automatizados, check, build e validacao no navegador passaram; a busca sem rede identificou os resultados do cache local.
+- W5: pesos iniciais cobertos por testes deterministas; revisar apos uso real e novos dados de relevancia.
 
 ### Rodada 6: PWA, performance e offline
 
