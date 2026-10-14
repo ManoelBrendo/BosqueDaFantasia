@@ -1,5 +1,5 @@
-const SHELL_CACHE = "bosque-shell-v21";
-const RUNTIME_CACHE = "bosque-runtime-v21";
+const SHELL_CACHE = "bosque-shell-v22";
+const RUNTIME_CACHE = "bosque-runtime-v22";
 const APP_SHELL = [
     "./site-config.js",
     "./assets/forest-fallback.svg",
@@ -15,6 +15,7 @@ const APP_SHELL = [
     "./livros.html",
     "./compra.html",
     "./app.js",
+    "./render-books.js",
     "./fantasy-effects.js",
     "./account-api.js",
     "./account-panel.js",

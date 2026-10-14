@@ -33,7 +33,7 @@ const server=createServer((req,res)=>servePublicFile(req,res,process.cwd()));
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 try {
  const base=`http://127.0.0.1:${server.address().port}`;
- for(const file of ['/','/livros.html','/compra.html','/login.html','/assets/site-polish.css']) assert.equal((await fetch(base+file)).status,200);
+ for(const file of ['/','/livros.html','/compra.html','/login.html','/assets/site-polish.css','/render-books.js']) assert.equal((await fetch(base+file)).status,200);
  for(const file of ['/missing.js','/backend/data/bosque-db.json','/.git/config','/package.json','/backend/server.mjs']) assert.equal((await fetch(base+file)).status,404);
  assert.equal((await fetch(base+'/%E0%A4%A')).status,400);
  console.log('OK: title policy, edition consistency, filters, token handling and public file isolation.');

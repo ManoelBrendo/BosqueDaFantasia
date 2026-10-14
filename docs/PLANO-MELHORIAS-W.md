@@ -139,6 +139,8 @@ Checagem em W:
 
 ### Rodada 2: melhoria visual do portal e densidade de interface
 
+**Status:** implementada em CSS compartilhado, sem reescrever as paginas.
+
 Objetivo:
 - Refinar a primeira impressao e reduzir excesso visual onde atrapalha leitura.
 
@@ -150,13 +152,14 @@ Melhorias:
 - Revisar mobile: topo, conta, busca e ficha de livro.
 
 Checagem em W:
-- W1: mapear pontos de friccao visual.
-- W2: definir tokens visuais: espacamento, borda, sombra, estados.
-- W3: aplicar em CSS sem reescrever a pagina inteira.
-- W4: testar 360px, 768px, 1366px.
-- W5: registrar antes/depois e proximas telas.
+- W1-W2: pontos de friccao identificados; contraste, borda, sombra e estados refinados.
+- W3: estilos compartilhados aplicados em `assets/site-polish.css`; sistema visual carregado antes da camada de polimento.
+- W4: quatro paginas verificadas em 360px, 768px e 1366px, sem overflow horizontal; cartoes do acervo compactos e responsivos.
+- W5: testes, check e build passaram. Proxima etapa: Rodada 3, arquitetura de frontend.
 
 ### Rodada 3: arquitetura de frontend
+
+**Status:** em andamento; primeira extração de renderização concluída.
 
 Objetivo:
 - Reduzir tamanho e acoplamento de `app.js` e `index.html`.
@@ -169,11 +172,11 @@ Melhorias:
 - Criar contratos claros para `Book`, `Author`, `ReadingPath` em documentacao.
 
 Checagem em W:
-- W1: escolher uma extracao pequena por vez.
-- W2: definir fronteiras de modulo.
-- W3: mover codigo mantendo comportamento.
-- W4: comparar fluxo antes/depois e rodar build.
-- W5: medir se reduziu complexidade real.
+- W1: extração incremental; iniciado pelos cartões de livros.
+- W2: `render-books.js` recebe escape HTML e consultas de favorito/leitura por callbacks, sem depender do DOM ou do estado global.
+- W3: cartões de acervo, curadoria, favoritos, temas e afinidade movidos sem alterar seus seletores ou atributos de interação.
+- W4: testes de renderização, testes existentes, verificação de arquivos e build passaram.
+- W5: `app.js` deixou de conter os templates de livro; demais extrações e separação do CSS continuam pendentes.
 
 ### Rodada 4: dados editoriais e curadoria
 

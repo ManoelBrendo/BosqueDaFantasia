@@ -12,6 +12,7 @@ import {
     topicThemes
 } from "./site-data.js?v=authors-pagination-v1";
 import { recommendBooksFromFavorites, recommendFromAnswers } from "./recommendation-engine.js?v=authors-pagination-v2";
+import { createBookRenderers } from "./render-books.js";
 
 const api = new BosqueCatalogApi();
 const defaultFilters = Object.fromEntries(advancedFilters.map((group) => [group.id, group.defaultValue]));
@@ -287,6 +288,19 @@ const isFavorite = (bookId) => {
     return state.favorites.includes(bookId);
 };
 
+const {
+    buildAffinityBookMarkup,
+    buildBookSaveButtonMarkup,
+    buildCuratedMarkup,
+    buildFavoriteMarkup,
+    buildResultMarkup,
+    buildTopicMarkup
+} = createBookRenderers({
+    escapeHtml,
+    isFavorite,
+    getReadingStatus: (bookId) => state.readingStatus[bookId] || "want-to-read"
+});
+
 const serializeUiState = () => {
     return {
         query: state.query,
@@ -370,92 +384,6 @@ const hydrateBookImages = (root) => {
     });
 };
 
-const buildBookChipRowMarkup = (book) => {
-    const chips = [
-        book.aura,
-        book.difficulty,
-        ...book.themes.slice(0, 2)
-    ];
-
-    return `
-        <div class="book-chip-row">
-            ${chips.map((chip) => `<span class="book-chip">${escapeHtml(chip)}</span>`).join("")}
-        </div>
-    `;
-};
-
-const buildBookSaveButtonMarkup = (book) => `
-    <button
-        class="book-save-button${isFavorite(book.id) ? " is-active" : ""}"
-        type="button"
-        data-book-save="${escapeHtml(book.id)}"
-        aria-pressed="${isFavorite(book.id) ? "true" : "false"}"
-    >
-        ${isFavorite(book.id) ? "Guardado" : "Guardar"}
-    </button>
-`;
-
-const buildCuratedMarkup = (book) => `
-    <article class="featured-card">
-        ${buildBookSaveButtonMarkup(book)}
-        <a class="book-card-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}" aria-label="Abrir a ficha editorial de ${escapeHtml(book.portugueseTitle || book.title)}">
-            <div class="book-cover-shell">
-                <img data-book-cover-id="${escapeHtml(book.id)}" src="${escapeHtml(book.cover)}" alt="Capa de ${escapeHtml(book.portugueseTitle || book.title)}" loading="lazy" decoding="async">
-            </div>
-            <div class="book-copy">
-                <span class="book-ribbon">${escapeHtml(book.aura)}</span>
-                <h3>${escapeHtml(book.portugueseTitle || book.title)}</h3>
-                <p class="book-original">${escapeHtml(book.titleNote || (book.originalTitle !== book.title ? `Título original: ${book.originalTitle}` : "Título em português"))}</p>
-                <p class="book-description">${escapeHtml(book.description)}</p>
-                ${buildBookChipRowMarkup(book)}
-                <div class="book-meta">
-                    <span>${escapeHtml(book.author)}</span>
-                    <span>${escapeHtml(book.year)}</span>
-                </div>
-            </div>
-        </a>
-    </article>
-`;
-
-const buildFavoriteMarkup = (book) => `${buildCuratedMarkup(book)}
-    <label class="reading-status-control" for="reading-status-${escapeHtml(book.id)}">
-        <span>Status de leitura</span>
-        <select id="reading-status-${escapeHtml(book.id)}" data-reading-status="${escapeHtml(book.id)}">
-            <option value="want-to-read"${state.readingStatus[book.id] === "want-to-read" ? " selected" : ""}>Quero ler</option>
-            <option value="reading"${state.readingStatus[book.id] === "reading" ? " selected" : ""}>Lendo</option>
-            <option value="read"${state.readingStatus[book.id] === "read" ? " selected" : ""}>Lido</option>
-        </select>
-    </label>
-`;
-
-const buildTopicMarkup = (topic) => `
-    <button class="theme-card" type="button" data-query="${escapeHtml(topic.query)}" data-label="${escapeHtml(topic.label)}">
-        <strong>${escapeHtml(topic.label)}</strong>
-        <span>${escapeHtml(topic.description)}</span>
-    </button>
-`;
-
-const buildResultMarkup = (book) => `
-    <article class="result-card">
-        ${buildBookSaveButtonMarkup(book)}
-        <a class="book-card-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}" aria-label="Abrir a ficha editorial de ${escapeHtml(book.title)}">
-            <div class="book-cover-shell">
-                <img data-book-cover-id="${escapeHtml(book.id)}" src="${escapeHtml(book.cover)}" alt="Capa de ${escapeHtml(book.title)}" loading="lazy" decoding="async">
-            </div>
-            <div class="book-copy">
-                <h3>${escapeHtml(book.title)}</h3>
-                <p class="book-author">${escapeHtml(book.author)}</p>
-                <p class="book-description">${escapeHtml(book.description)}</p>
-                ${buildBookChipRowMarkup(book)}
-                <div class="book-meta">
-                    <span>${escapeHtml(book.year)}</span>
-                    <span>${book.editionCount ? `${escapeHtml(book.editionCount)} edicoes` : "Acervo geral"}</span>
-                </div>
-            </div>
-        </a>
-    </article>
-`;
-
 const buildGlossaryMarkup = (entry) => `
     <article class="glossary-card">
         <span class="book-ribbon">${escapeHtml(entry.category)}</span>
@@ -485,13 +413,6 @@ const buildAffinityQuestionMarkup = (question) => `
             `).join("")}
         </div>
     </article>
-`;
-
-const buildAffinityBookMarkup = (book) => `
-    <a class="affinity-book-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}">
-        <strong>${escapeHtml(book.title)}</strong>
-        <span>${escapeHtml(book.author)}</span>
-    </a>
 `;
 
 const buildAuthorCardMarkup = (author) => `
