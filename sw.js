@@ -1,6 +1,7 @@
-const SHELL_CACHE = "bosque-shell-v20";
-const RUNTIME_CACHE = "bosque-runtime-v20";
+const SHELL_CACHE = "bosque-shell-v21";
+const RUNTIME_CACHE = "bosque-runtime-v21";
 const APP_SHELL = [
+    "./site-config.js",
     "./assets/forest-fallback.svg",
     "./assets/design-system.css",
     "./assets/js/site-ui.js",
@@ -51,6 +52,22 @@ const cacheFirst = async (request, cacheName) => {
         cache.put(request, networkResponse.clone());
     }
     return networkResponse;
+};
+
+const networkFirst = async (request, cacheName) => {
+    const cache = await caches.open(cacheName);
+
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            await cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        const cachedResponse = await cache.match(request);
+        if (cachedResponse) return cachedResponse;
+        throw error;
+    }
 };
 
 const staleWhileRevalidate = async (request, cacheName) => {
@@ -120,6 +137,10 @@ self.addEventListener("fetch", (event) => {
     }
 
     if (requestUrl.origin === self.location.origin) {
+        if (requestUrl.pathname === new URL("./site-config.js", self.location.href).pathname) {
+            event.respondWith(networkFirst(event.request, SHELL_CACHE));
+            return;
+        }
         event.respondWith(cacheFirst(event.request, SHELL_CACHE));
         return;
     }

@@ -1,4 +1,4 @@
-import { bosqueApi } from "./account-api.js?v=server-roles-v1";
+import { bosqueApi, describeAuthError } from "./account-api.js?v=account-connectivity-v1";
 import { BosqueLibraryDb } from "./library-db.js";
 import { affinityQuestions, readingPaths } from "./site-data.js";
 import { recommendFromAnswers } from "./recommendation-engine.js";
@@ -7,6 +7,11 @@ const LOGIN_ENTRY_DELAY_MS = 1100;
 const PROFILE_NICKNAME_PREFIX = "bosque-profile-nickname:";
 const profileDatabase = new BosqueLibraryDb();
 let activeUser = null;
+let apiHealthState = {
+    tone: "idle",
+    message: "Verificando conexão do servidor..."
+};
+let apiHealthRequestId = 0;
 
 const style = document.createElement("style");
 style.textContent = `
@@ -145,6 +150,10 @@ style.textContent = `
     .auth-api-status[data-tone="local"] {
         border-color: rgba(240, 223, 176, 0.3);
         color: #f0dfb0;
+    }
+    .auth-api-status[data-tone="offline"] {
+        border-color: rgba(229, 145, 126, 0.42);
+        color: #ffd8cf;
     }
     .auth-loading {
         display: none;
@@ -433,6 +442,20 @@ style.textContent = `
         background: rgba(139, 186, 153, 0.16);
         color: #d8f0df;
     }
+    .account-connection-status {
+        display: grid;
+        gap: 0.55rem;
+        margin-top: 0.9rem;
+    }
+    .account-connection-status .auth-api-status {
+        margin: 0;
+    }
+    .account-connection-status .button {
+        justify-self: start;
+        min-height: 2.35rem;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.82rem;
+    }
     .account-nickname-row {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -602,14 +625,11 @@ const setLoading = (isLoading, message = "Abrindo o portal...") => {
 };
 
 const setApiStatus = (message, tone = "idle") => {
-    const status = document.getElementById("auth-api-status");
-
-    if (!status) {
-        return;
+    apiHealthState = { message, tone };
+    for (const status of document.querySelectorAll("#auth-api-status, #account-api-status")) {
+        status.textContent = message;
+        status.dataset.tone = tone;
     }
-
-    status.textContent = message;
-    status.dataset.tone = tone;
 };
 
 const delay = (duration) => {
@@ -671,14 +691,14 @@ const getSessionModeLabel = (user) => {
         return {
             mode: "local",
             label: "Modo local",
-            description: "Sessao salva apenas neste navegador."
+            description: "Conta, favoritos e preferências ficam apenas neste navegador."
         };
     }
 
     return {
         mode: "remote",
-        label: "API legada",
-        description: "Sessao conectada ao backend."
+        label: "Conta no servidor",
+        description: "A conta fica no servidor; favoritos e preferências continuam neste navegador."
     };
 };
 
@@ -914,6 +934,10 @@ const renderAccountWidget = async (user, { refresh = false } = {}) => {
                 <span>${escapeHtml(sessionMode.description)}</span>
             </div>
         </div>
+        <div class="account-connection-status">
+            <p id="account-api-status" class="auth-api-status" data-tone="${escapeHtml(apiHealthState.tone)}" role="status" aria-live="polite">${escapeHtml(apiHealthState.message)}</p>
+            <button id="account-check-api" class="button ghost" type="button">Verificar conexão</button>
+        </div>
         <div class="account-nickname-row">
             <input id="account-nickname-input" type="text" maxlength="32" value="${escapeHtml(nickname)}" aria-label="Editar apelido">
             <button id="account-save-nickname" class="button ghost" type="button">Salvar</button>
@@ -942,6 +966,10 @@ const renderAccountWidget = async (user, { refresh = false } = {}) => {
         panel.querySelector("#account-current-nickname").textContent = nextNickname;
         widget.querySelector("#account-trigger-name").textContent = getCompactName(nextNickname);
         widget.querySelector("#account-trigger-name").title = nextNickname;
+    });
+
+    panel.querySelector("#account-check-api")?.addEventListener("click", () => {
+        syncApiHealth();
     });
 
     panel.querySelector("#account-logout")?.addEventListener("click", () => {
@@ -1110,14 +1138,15 @@ const bindForms = () => {
                 password: form.get("password")
             });
             setStatus(mode === "local"
-                ? `Bem-vindo de volta, ${user.name}. Sessão local ativa.`
+                ? `Bem-vindo de volta, ${user.name}. Conta local neste navegador; seus dados não foram sincronizados.`
                 : `Bem-vindo de volta, ${user.name}.`);
             setLoading(true, "Portal autorizado. Preparando travessia...");
             await delay(LOGIN_ENTRY_DELAY_MS);
             unlockSite({ withPortal: true });
         } catch (error) {
             setLoading(false);
-            setStatus(`You shall not pass! ${error.message}`);
+            if (error?.code === "API_UNAVAILABLE" || error?.cause?.code === "API_UNAVAILABLE") void syncApiHealth();
+            setStatus(describeAuthError(error));
             showDeniedLogin();
         }
     });
@@ -1141,14 +1170,19 @@ const bindForms = () => {
             unlockSite({ withPortal: true });
         } catch (error) {
             setLoading(false);
-            setStatus(error.message);
+            setStatus(describeAuthError(error));
         }
     });
 };
 
 const syncApiHealth = async () => {
+    const requestId = ++apiHealthRequestId;
     if (!bosqueApi.canUseRemoteApi()) {
-        setApiStatus("Sua conta será salva neste navegador.", "local");
+        if (bosqueApi.getMode() === "remote" && !bosqueApi.getToken().startsWith("local:")) {
+            setApiStatus("A conta remota está salva, mas este site não está configurado com o endereço da API. A sessão não foi verificada.", "offline");
+            return;
+        }
+        setApiStatus("Modo local: contas, favoritos e preferências ficam neste navegador e não sincronizam entre dispositivos.", "local");
         return;
     }
 
@@ -1156,11 +1190,16 @@ const syncApiHealth = async () => {
 
     try {
         const health = await bosqueApi.health();
-        setApiStatus(health?.amazonConfigured
-            ? "Acesso à conta disponível."
-            : "Acesso à conta disponível.", "ready");
-    } catch {
-        setApiStatus("Usaremos a conta salva neste navegador.", "local");
+        if (requestId !== apiHealthRequestId) return;
+        if (health?.ok !== true) {
+            throw Object.assign(new Error("A verificação de saúde da API não confirmou disponibilidade."), { code: "API_UNAVAILABLE" });
+        }
+        setApiStatus("Servidor da conta conectado. Favoritos e preferências continuam salvos neste navegador.", "ready");
+    } catch (error) {
+        if (requestId !== apiHealthRequestId) return;
+        setApiStatus(error?.code === "API_UNAVAILABLE"
+            ? "Servidor da conta indisponível. A experiência pública continua; contas remotas podem não autenticar."
+            : "Não foi possível confirmar o estado do servidor. Tente verificar novamente.", "offline");
     }
 };
 
@@ -1169,7 +1208,17 @@ const initAuthGate = async () => {
     ensureAccountWidget();
     bindTabs();
     bindForms();
-    syncApiHealth().catch(() => null);
+    void syncApiHealth();
+    window.setInterval(() => {
+        if (document.visibilityState === "visible") void syncApiHealth();
+    }, 60_000);
+    window.addEventListener("online", () => void syncApiHealth());
+    window.addEventListener("offline", () => {
+        if (bosqueApi.canUseRemoteApi()) {
+            apiHealthRequestId += 1;
+            setApiStatus("Sem conexão de rede. A conta remota não pode ser verificada; recursos públicos e dados locais continuam disponíveis.", "offline");
+        }
+    });
     window.addEventListener("bosque:session", (event) => {
         renderAccountWidget(event.detail?.user || null, { refresh: Boolean(event.detail?.user) }).catch(() => null);
     });
@@ -1186,10 +1235,24 @@ const initAuthGate = async () => {
         const { user } = await bosqueApi.me();
         unlockSite();
         renderAccountWidget(user, { refresh: true }).catch(() => null);
-    } catch {
-        bosqueApi.clearSession();
-        closeAccountWidget();
-        lockSite();
+    } catch (error) {
+        if (error?.code === "API_UNAVAILABLE" || error?.code === "API_ERROR") {
+            unlockSite();
+            try {
+                await renderAccountWidget(bosqueApi.getStoredUser(), { refresh: true });
+            } catch (profileError) {
+                console.error("Não foi possível carregar o perfil local enquanto a API está indisponível.", profileError);
+            }
+            return;
+        }
+        if (error?.code === "SESSION_EXPIRED") {
+            bosqueApi.clearSession();
+            closeAccountWidget();
+            lockSite();
+            setStatus("Sua sessão expirou. Entre novamente.");
+            return;
+        }
+        throw error;
     }
 };
 

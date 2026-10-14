@@ -8,6 +8,13 @@ let calls=[];
 const doc=(id,title)=>({key:`/works/OL${id}W`,title:'Titulo da obra',author_name:['J. R. R. Tolkien'],first_publish_year:1937,editions:{docs:[{key:`/books/OL${id}M`,title,language:['eng'],ebook_access:'public'}]}});
 await context.route('**/*',async route=>{
  const url=new URL(route.request().url());
+ if(url.hostname==='127.0.0.1' && url.port==='4180') {
+  const headers={'Access-Control-Allow-Origin':'http://127.0.0.1:4173','Access-Control-Allow-Methods':'GET,POST,OPTIONS','Access-Control-Allow-Headers':'Content-Type,Authorization','Content-Type':'application/json'};
+  if(route.request().method()==='OPTIONS') return route.fulfill({status:204,headers});
+  if(url.pathname==='/api/health') return route.fulfill({status:200,headers,body:JSON.stringify({ok:true})});
+  if(url.pathname==='/api/auth/login') return route.fulfill({status:401,headers,body:JSON.stringify({error:'Credenciais invalidas.'})});
+  return route.fulfill({status:404,headers,body:JSON.stringify({error:'Not found'})});
+ }
  if(url.hostname==='127.0.0.1') return route.continue();
  if(url.hostname==='openlibrary.org' && url.pathname==='/search.json') {
   calls.push(url);const q=url.searchParams.get('q'); const page=Number(url.searchParams.get('page'));
@@ -61,10 +68,34 @@ try {
  await page.waitForFunction(()=>document.querySelector('#catalog-status').textContent.includes('Resultados salvos'));
  await context.setOffline(false);
  await page.goto('http://127.0.0.1:4173/login.html');
+ await page.waitForFunction(()=>document.querySelector('#api-status')?.dataset.tone==='local');
  await page.locator('#email').fill('invalid@example.test');await page.locator('#password').fill('incorrect');
  await page.locator('.submit-button').click();
- await page.waitForFunction(()=>document.querySelector('#feedback').classList.contains('error'));
+ await page.waitForFunction(()=>document.querySelector('#feedback').textContent.includes('conta local neste navegador'));
  assert.equal(await page.locator('.submit-button').isEnabled(),true);
+ const remoteLoginPage=await context.newPage();
+ await remoteLoginPage.addInitScript(()=>{window.BOSQUE_API_BASE='http://127.0.0.1:4180';});
+ await remoteLoginPage.goto('http://127.0.0.1:4173/login.html');
+ await remoteLoginPage.waitForFunction(()=>document.querySelector('#api-status')?.dataset.tone==='ready');
+ await remoteLoginPage.locator('#email').fill('reader@example.test');
+ await remoteLoginPage.locator('#password').fill('incorrect');
+ await remoteLoginPage.locator('.submit-button').click();
+ await remoteLoginPage.waitForFunction(()=>document.querySelector('#feedback').textContent==='E-mail ou senha incorretos.');
+ const offlineSessionPage=await context.newPage();
+ await offlineSessionPage.addInitScript(()=>{
+  window.BOSQUE_API_BASE='http://127.0.0.1:4199';
+  localStorage.setItem('bosque-api-token','remote-token');
+  localStorage.setItem('bosque-session-mode','remote');
+  localStorage.setItem('bosque-api-user',JSON.stringify({id:'offline-reader',email:'offline@example.test',name:'Leitor Offline'}));
+ });
+ await offlineSessionPage.goto('http://127.0.0.1:4173/index.html');
+ await offlineSessionPage.waitForFunction(()=>document.querySelector('#account-api-status')?.dataset.tone==='offline');
+ assert.equal(await offlineSessionPage.locator('body').evaluate(body=>body.classList.contains('auth-locked')),false);
+ assert.equal(await offlineSessionPage.evaluate(()=>localStorage.getItem('bosque-api-token')),'remote-token');
+ assert.equal(await offlineSessionPage.locator('.account-mode-badge').textContent(),'Conta no servidor');
+ await offlineSessionPage.evaluate(()=>localStorage.clear());
+ await offlineSessionPage.close();
+ await remoteLoginPage.close();
  await page.goto('http://127.0.0.1:4173/compra.html?book=OL99W');
  await page.waitForFunction(()=>document.querySelector('#purchase-title').textContent==='Direct Link Book');
  await page.goto('http://127.0.0.1:4173/compra.html?book=invalid');
@@ -84,6 +115,6 @@ try {
    }
   }
  }
- console.log(JSON.stringify({passed:'search, aliases, filters, pagination, sorting, detail identity, return state, empty and failure states',overflow,errors},null,2));
+ console.log(JSON.stringify({passed:'search, aliases, filters, pagination, sorting, detail identity, return state, empty and failure states, local and remote login messages, unavailable API with cached session',overflow,errors},null,2));
  assert.deepEqual(overflow,[]);assert.deepEqual(errors,[]);
 } finally { await browser.close(); }

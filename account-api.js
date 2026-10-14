@@ -67,7 +67,7 @@ const clearLegacyMasterSession = () => {
 };
 
 const buildRemoteUnavailableError = (cause) => {
-    const error = new Error("A API legada nao respondeu. Use uma conta local deste navegador ou publique o backend junto do site.");
+    const error = new Error("O servidor da conta está indisponível.");
     error.code = "API_UNAVAILABLE";
     error.cause = cause;
     return error;
@@ -85,6 +85,15 @@ const getHeaders = (options = {}) => {
     }
 
     return headers;
+};
+
+const getApiErrorCode = (status, path) => {
+    if (status === 401) return path === "/api/auth/login" ? "INVALID_CREDENTIALS" : "SESSION_EXPIRED";
+    if (status === 403) return "PERMISSION_DENIED";
+    if (status === 429) return "RATE_LIMITED";
+    if (status === 400) return "INVALID_INPUT";
+    if (status === 409) return "ACCOUNT_EXISTS";
+    return "API_ERROR";
 };
 
 const fetchJson = async (path, options, base = API_BASE) => {
@@ -109,7 +118,10 @@ const fetchJson = async (path, options, base = API_BASE) => {
     }
 
     if (!response.ok) {
-        throw new Error(payload.error || "A API nao respondeu com sucesso.");
+        const error = new Error(payload.error || "O servidor da conta não respondeu com sucesso.");
+        error.status = response.status;
+        error.code = getApiErrorCode(response.status, path);
+        throw error;
     }
 
     return payload;
@@ -120,11 +132,7 @@ const request = async (path, options = {}) => {
         throw buildRemoteUnavailableError(new Error("API remota nao configurada para hospedagem estatica."));
     }
 
-    try {
-        return await fetchJson(path, options);
-    } catch (error) {
-        throw error;
-    }
+    return fetchJson(path, options);
 };
 
 const requireSessionPayload = (result) => {
@@ -133,6 +141,47 @@ const requireSessionPayload = (result) => {
     }
 
     return result;
+};
+
+export const describeAuthError = (error) => {
+    if (error?.code === "INVALID_CREDENTIALS") {
+        return "E-mail ou senha incorretos.";
+    }
+    if (
+        error?.code === "LOCAL_INVALID_CREDENTIALS" &&
+        error.cause?.code === "API_UNAVAILABLE" &&
+        REMOTE_API_ENABLED
+    ) {
+        return "O servidor da conta está indisponível. Contas remotas não podem entrar agora; o acesso local só funciona para uma conta criada neste navegador.";
+    }
+    if (error?.code === "LOCAL_INVALID_CREDENTIALS") {
+        return "Credenciais locais incorretas. Crie uma conta local neste navegador ou tente novamente.";
+    }
+    if (error?.code === "API_UNAVAILABLE") {
+        return "Servidor da conta indisponível. Tente novamente mais tarde ou entre com sua conta local deste navegador.";
+    }
+    if (error?.code === "SESSION_EXPIRED") {
+        return "Sua sessão expirou. Entre novamente.";
+    }
+    if (error?.code === "RATE_LIMITED") {
+        return "Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.";
+    }
+    if (error?.code === "LOCAL_EMAIL_EXISTS") {
+        return "Este e-mail já tem uma conta local neste navegador.";
+    }
+    if (error?.code === "ACCOUNT_EXISTS") {
+        return "Este e-mail já tem uma conta no servidor.";
+    }
+    if (error?.code === "INVALID_INPUT") {
+        return error.message;
+    }
+    if (error?.code === "PERMISSION_DENIED") {
+        return "Sua conta não tem permissão para esta operação.";
+    }
+    if (error?.code === "API_ERROR") {
+        return "O servidor da conta encontrou um erro. Tente novamente mais tarde.";
+    }
+    return error?.message || "Não foi possível concluir o acesso. Tente novamente.";
 };
 
 const setSession = ({ token, user, mode = REMOTE_MODE }) => {
@@ -224,7 +273,9 @@ const registerLocal = async ({ email, password, name }) => {
     const users = readLocalUsers();
 
     if (users.some((user) => user.email === normalizedEmail)) {
-        throw new Error("Este e-mail ja existe no modo local deste navegador.");
+        const error = new Error("Este e-mail já existe no modo local deste navegador.");
+        error.code = "LOCAL_EMAIL_EXISTS";
+        throw error;
     }
 
     const user = {
@@ -252,7 +303,9 @@ const loginLocal = async ({ email, password }) => {
     const user = readLocalUsers().find((entry) => entry.email === normalizedEmail);
 
     if (!user || user.passwordHash !== passwordHash) {
-        throw new Error("Credenciais invalidas no modo local. Crie uma conta local neste navegador.");
+        const error = new Error("Credenciais inválidas no modo local. Crie uma conta local neste navegador.");
+        error.code = "LOCAL_INVALID_CREDENTIALS";
+        throw error;
     }
 
     return {
@@ -266,13 +319,17 @@ const meLocal = () => {
     const payload = readLocalTokenPayload();
 
     if (!payload) {
-        throw new Error("Sessao local expirada.");
+        const error = new Error("Sua sessão local expirou.");
+        error.code = "SESSION_EXPIRED";
+        throw error;
     }
 
     const user = readLocalUsers().find((entry) => entry.id === payload.sub);
 
     if (!user) {
-        throw new Error("Usuario local nao encontrado.");
+        const error = new Error("Sua conta local não foi encontrada neste navegador.");
+        error.code = "SESSION_EXPIRED";
+        throw error;
     }
 
     return {
@@ -336,9 +393,16 @@ export const bosqueApi = {
                 throw error;
             }
 
-            const result = requireSessionPayload(await loginLocal(payload));
-            setSession(result);
-            return result;
+            try {
+                const result = requireSessionPayload(await loginLocal(payload));
+                setSession(result);
+                return result;
+            } catch (localError) {
+                if (localError.code === "LOCAL_INVALID_CREDENTIALS") {
+                    localError.cause = error;
+                }
+                throw localError;
+            }
         }
     },
     async me() {

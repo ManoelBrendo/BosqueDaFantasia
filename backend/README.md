@@ -40,15 +40,13 @@ http://127.0.0.1:4180
 
 ## Frontend com API centralizada
 
-Quando quiser usar conta centralizada, publique este backend em um host separado e informe a base da API antes de carregar `account-api.js`:
+Quando quiser usar conta centralizada, publique este backend em um host separado e configure a origem publica em `site-config.js`:
 
-```html
-<script>
-  window.BOSQUE_API_BASE = "https://sua-api.example.com";
-</script>
+```js
+window.BOSQUE_API_BASE = "https://sua-api.example.com";
 ```
 
-Sem essa configuracao, o frontend usa conta local salva apenas no navegador do usuario.
+O mesmo arquivo e carregado pelo portal e pela pagina de login. Sem essa configuracao, o frontend usa conta local salva apenas no navegador do usuario. A tela de acesso informa o estado da API; se o servidor estiver fora, contas remotas nao podem autenticar e o site mantem a experiencia publica/dados locais disponiveis.
 
 ## Rotas
 

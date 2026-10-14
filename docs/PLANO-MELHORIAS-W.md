@@ -119,6 +119,8 @@ Bloqueio de producao:
 
 ### Rodada 1: consolidar login e API legada
 
+**Status:** indicador de modo/conectividade, estados de erro e guia generico de backend separado implementados; conta local mantida como modo padrao e fallback explicito. A sessao remota em cache nao bloqueia a experiencia publica quando a API cai, mas tambem nao e considerada verificada.
+
 Objetivo:
 - Garantir que o site funcione em GitHub Pages e tambem com backend real.
 

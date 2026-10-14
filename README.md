@@ -35,6 +35,7 @@ Se o terminal ainda nao reconhecer `node` ou `npm`, feche e abra o terminal nova
 - `open-library-api.js`: cliente de rede da Open Library com enriquecimento editorial.
 - `site-data.js`: base editorial fixa do projeto.
 - `recommendation-engine.js`: motor de afinidade do Oraculo.
+- `site-config.js`: configuracao publica opcional da URL do backend remoto.
 - `pwa.js`: registro do modo instalavel e status PWA.
 - `sw.js`: service worker para cache offline.
 - `manifest.webmanifest`: manifesto da aplicacao instalavel.
@@ -66,6 +67,6 @@ Se o terminal ainda nao reconhecer `node` ou `npm`, feche e abra o terminal nova
 
 - O projeto continua sem build e sem dependencias de instalacao.
 - O modo offline completo funciona quando o site esta publicado em HTTPS, como no GitHub Pages.
-- O login usa modo local no navegador por padrao e nao precisa de API rodando. Para contas centralizadas, publique o backend e defina `window.BOSQUE_API_BASE`.
+- O login usa modo local no navegador por padrao e nao precisa de API rodando. Para contas centralizadas, publique o backend e configure a origem publica em `site-config.js`.
 - A trilha ambiente usa audios abertos do Wikimedia Commons com fontes MP3/OGG, player customizado, controle de volume e opcoes de faixa.
 - O audio ambiente e algumas imagens dependem de fontes externas na primeira visita, mas passam a se beneficiar do cache offline depois de acessados.

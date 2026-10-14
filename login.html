@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="./login.css">
     <link rel="stylesheet" href="./assets/site-polish.css">
     <link rel="stylesheet" href="./assets/design-system.css">
+    <script src="./site-config.js"></script>
 </head>
 <body class="page-login">
 <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
@@ -32,6 +33,7 @@
             <p class="login-intro">Entre para continuar sua jornada pelo acervo.</p>
 
             <form id="login-form" class="login-form">
+                <p id="api-status" class="api-status" data-tone="idle" role="status" aria-live="polite">Verificando conexão da conta...</p>
                 <div class="field-group">
                     <label for="email">E-mail</label>
                     <input
@@ -64,7 +66,7 @@
     </main>
 <footer class="site-footer"><div><a class="site-brand" href="index.html">Bosque da Fantasia</a><p>Uma boa história é só o começo da jornada.</p></div><nav aria-label="Links do rodapé"><a href="livros.html">Explorar livros</a><a href="index.html#glossario">Glossário</a><a href="CREDITOS-IMAGENS.md">Créditos das imagens</a></nav><span class="footer-signature">Literatura · Imaginação · Descoberta</span></footer>
 
-    <script type="module" src="./login.js?v=master-session-v2"></script>
+    <script type="module" src="./login.js?v=account-connectivity-v1"></script>
     <script type="module" src="./assets/js/site-ui.js"></script>
 </body>
 </html>

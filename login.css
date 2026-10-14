@@ -83,6 +83,31 @@ h1 {
     gap: 1.1rem;
 }
 
+.api-status {
+    margin: 0;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.55rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.api-status[data-tone="ready"] {
+    border-color: rgba(36, 115, 79, 0.32);
+    color: var(--success);
+}
+
+.api-status[data-tone="local"] {
+    border-color: rgba(164, 119, 35, 0.35);
+    color: #795714;
+}
+
+.api-status[data-tone="offline"] {
+    border-color: rgba(179, 38, 53, 0.32);
+    color: var(--error);
+}
+
 .field-group {
     display: grid;
     gap: 0.45rem;

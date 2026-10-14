@@ -41,6 +41,18 @@ Este runbook descreve o caminho seguro para publicar o Bosque da Fantasia e chec
 
 O site nao precisa do backend para login local. O backend Node e opcional e serve para conta centralizada, arquivos e integracoes.
 
+### Publicar em host Node separado
+
+1. Crie um servico Node.js com Node 20 ou superior e publique o repositorio com `npm run api` como comando de inicio.
+2. Configure as variaveis de ambiente abaixo no painel seguro do provedor. Nao adicione valores reais ao repositorio nem ao arquivo `site-config.js`.
+3. Ative HTTPS e configure `BOSQUE_CORS_ORIGIN` com a origem exata do site estatico (sem barra final).
+4. Configure armazenamento persistente para `backend/data` e `backend/uploads`. O banco atual e JSON local; um sistema de arquivos efemero perde dados ao reiniciar, e multiplas instancias nao devem compartilhar esse banco sem migracao para storage transacional.
+5. Aplique temporariamente `BOSQUE_BOOTSTRAP_ADMIN_EMAIL` e `BOSQUE_BOOTSTRAP_ADMIN_PASSWORD` para provisionar o primeiro admin; remova as duas variaveis depois da inicializacao confirmada.
+6. Confira `https://sua-api.example.com/api/health` e depois defina `window.BOSQUE_API_BASE` em `site-config.js` com essa origem HTTPS.
+7. Rode `npm run build`, publique o conteudo de `dist` no host estatico e teste login remoto, credencial invalida, API indisponivel e acesso local.
+
+O contrato de bootstrap ainda nao implementa recuperacao de conta, sincronizacao de favoritos ou rotas administrativas de produto. Nao trate o endpoint de health como verificacao da sessao do usuario.
+
 Variaveis importantes:
 
 ```text
@@ -55,12 +67,10 @@ AMAZON_SECRET_KEY=
 AMAZON_PARTNER_TAG=
 ```
 
-Depois de publicar, configurar o frontend antes de carregar `account-api.js`:
+Depois de publicar, configurar `site-config.js`:
 
-```html
-<script>
-  window.BOSQUE_API_BASE = "https://sua-api.example.com";
-</script>
+```js
+window.BOSQUE_API_BASE = "https://sua-api.example.com";
 ```
 
 ## Checagem em W por deploy
