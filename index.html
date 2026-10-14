@@ -14,7 +14,7 @@
         content="Descubra autores, mitos, livros clássicos e um acervo pesquisável em uma experiência élfica e medieval."
     >
     <meta property="og:type" content="website">
-    <meta name="theme-color" content="#102019">
+    <meta name="theme-color" content="#10251f">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="preconnect" href="https://covers.openlibrary.org">
@@ -25,16 +25,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" href="./bosque-icon.svg" type="image/svg+xml">
-    <link rel="modulepreload" href="./app.js?v=mobile-audio-v1">
+    <link rel="modulepreload" href="./app.js?v=portuguese-titles-v1">
     <link rel="modulepreload" href="./audio-player.js">
-    <link rel="modulepreload" href="./catalog-api.js?v=authors-pagination-v2">
+    <link rel="modulepreload" href="./catalog-api.js?v=portuguese-titles-v1">
     <link rel="modulepreload" href="./library-db.js">
     <link rel="modulepreload" href="./open-library-api.js">
     <link rel="modulepreload" href="./pwa.js">
     <link rel="modulepreload" href="./site-data.js">
     <link rel="modulepreload" href="./recommendation-engine.js?v=authors-pagination-v2">
     <link rel="modulepreload" href="./fantasy-effects.js">
-    <link rel="modulepreload" href="./account-api.js?v=local-auth-v3">
+    <link rel="modulepreload" href="./account-api.js?v=server-roles-v1">
     <link rel="modulepreload" href="./account-panel.js?v=public-entry-v3">
     <script>
         window.BOSQUE_ANALYTICS = {
@@ -2682,39 +2682,35 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="./assets/site-polish.css">
+    <link rel="stylesheet" href="./assets/design-system.css">
 </head>
-<body>
+<body class="page-home">
     <div class="site-shell">
         
         
-        <header class="topbar">
-            <div class="topbar-inner">
-                <a class="brand" href="#inicio" aria-label="Voltar ao inicio do Bosque da Fantasia">
-                    <div class="brand-mark" aria-hidden="true">&#10022;</div>
-                    <div class="brand-copy">
-                        <strong>Bosque da Fantasia</strong>
-                        <span>Literatura fantástica para começar bem</span>
-                    </div>
-                </a>
-                <button id="nav-toggle" class="nav-toggle" type="button" aria-expanded="false" aria-controls="topnav">Menu</button>
-                <nav id="topnav" class="topnav" aria-label="Navegação principal">
-                    <a href="#panorama">Como começar</a>
-                    <a href="#afinidade">Seu perfil</a>
-                    <a href="#autores">Autores</a>
-                    <a href="#glossario">Glossario</a>
-                    <a href="#estante">Estante</a>
-                    <a href="#oraculo">Busca</a>
-                    <a href="#compra">Livro</a>
-                </nav>
-            </div>
-        </header>
+        <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-brand" href="index.html" aria-label="Bosque da Fantasia — início"><img src="bosque-icon.svg" width="40" height="40" alt=""><span>Bosque da Fantasia<small>Histórias para atravessar mundos</small></span></a>
+            <button id="site-menu-toggle" class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" hidden>Menu</button>
+            <nav id="primary-navigation" class="site-navigation" aria-label="Navegação principal">
+                <a href="index.html" aria-current="page">Início</a>
+                <a href="livros.html" >Acervo</a>
+                <a href="index.html#afinidade">Descobrir meu perfil</a>
+                <a href="index.html#estante">Minha estante</a>
+                <a class="nav-account" href="login.html" >Entrar <span aria-hidden="true">↗</span></a>
+            </nav>
+        </div>
+    </header>
 
-        <main>
+        <main id="main-content" tabindex="-1">
             <section id="inicio" class="hero" aria-labelledby="titulo-principal">
                 <div class="hero-copy animate__animated animate__fadeIn">
-                    <div class="eyebrow">Um portal para quem está começando</div>
-                    <h1 id="titulo-principal"><span class="hero-title-desktop">Descubra fantasia com calma, sem precisar conhecer nada antes.</span><span class="hero-title-mobile">Encontre sua próxima fantasia.</span></h1>
-                    <p>O Bosque organiza autores, livros, termos e trilhas de leitura em um caminho simples: primeiro você entende o seu gosto, depois explora o acervo e escolhe por onde começar.</p>
+                    <div class="eyebrow">Literatura para atravessar mundos</div>
+                    <h1 id="titulo-principal"><span class="hero-title-desktop">Entre no bosque.<br>Encontre sua próxima história.</span><span class="hero-title-mobile">Encontre sua próxima fantasia.</span></h1>
+                    <p>De reinos antigos a florestas encantadas: descubra livros, conheça autores e encontre a fantasia que combina com você.</p>
+                    <form class="home-search" action="livros.html" method="get"><label for="home-search">Qual história você procura?</label><div><input id="home-search" name="q" type="search" placeholder="Um livro, um autor, um novo mundo…"><button class="button primary" type="submit">Explorar acervo <span aria-hidden="true">→</span></button></div></form>
                     <div class="hero-actions">
                         <a class="button primary" href="#afinidade">Descobrir meu perfil</a>
                         <a class="button secondary" href="#estante">Ver livros para começar</a>
@@ -2813,7 +2809,7 @@
                     <div class="section-header-copy">
                         <div class="eyebrow">Começo rapido</div>
                         <h2 id="quick-start-titulo">Escolha por onde entrar hoje.</h2>
-                        <p>As trilhas abaixo evitam a indecisao inicial e levam o usuario diretamente ao que mais combina com o momento.</p>
+                        <p>Escolha uma trilha e descubra histórias que combinam com seu momento.</p>
                     </div>
                     <div class="knot" aria-hidden="true"></div>
                 </div>
@@ -2966,6 +2962,7 @@
                 </div>
                 <div class="glossary-layout">
                     <div class="glossary-toolbar">
+                        <label class="mini-label" for="glossary-search">Pesquisar no glossário</label>
                         <input id="glossary-search" class="glossary-search" type="search" placeholder="Buscar termo, ex.: feeria, Avalon, quest..." autocomplete="off">
                         <span id="glossary-count" class="pwa-pill" data-tone="idle">0 verbetes revelados</span>
                     </div>
@@ -3126,25 +3123,7 @@
         </main>
 
 
-        <footer class="footer">
-            <div class="footer-card">
-                <p>Bosque da Fantasia reune orientacao para iniciantes, acervo pesquisavel, autores, glossario e fichas de leitura em uma unica jornada.</p>
-                <details>
-                    <summary>Creditos e licencas</summary>
-                    <p>As imagens historicas e a trilha ambiente usam fontes abertas ou status compativel indicado nos creditos.</p>
-                    <p style="margin-top: 0.75rem;">
-                        Nas capas do acervo, o site tenta primeiro a Open Library Covers API. Quando uma obra nao retorna capa por la,
-                        ele tenta algumas imagens historicas com licenca aberta verificadas no Wikimedia Commons. Se ainda assim nao houver
-                        uma opcao segura, a pagina mantem a capa cerimonial do proprio site em vez de usar uma imagem sem clareza de direitos.
-                    </p>
-                    <div class="footer-links">
-                        <a href="CREDITOS-IMAGENS.md">Abrir creditos completos</a>
-                        <a href="https://openlibrary.org/search/howto" target="_blank" rel="noreferrer">Open Library Search API</a>
-                        <a href="https://covers.openlibrary.org/" target="_blank" rel="noreferrer">Open Library Covers API</a>
-                    </div>
-                </details>
-            </div>
-        </footer>
+        <footer class="site-footer"><div><a class="site-brand" href="index.html">Bosque da Fantasia</a><p>Uma boa história é só o começo da jornada.</p></div><nav aria-label="Links do rodapé"><a href="livros.html">Explorar livros</a><a href="index.html#glossario">Glossário</a><a href="CREDITOS-IMAGENS.md">Créditos das imagens</a></nav><span class="footer-signature">Literatura · Imaginação · Descoberta</span></footer>
 
         <nav class="mobile-action-bar" aria-label="Atalhos móveis">
             <a href="#inicio">Início</a>
@@ -3197,7 +3176,7 @@
         }
     </script>
     <script type="module" src="./fantasy-effects.js"></script>
-    <script type="module" src="./account-panel.js?v=public-entry-v3"></script>
+    <script type="module" src="./account-panel.js?v=server-roles-v1"></script>
     <script type="module">
         import { initAudioPlayer } from "./audio-player.js";
         import { initPwaFeatures } from "./pwa.js";
@@ -3214,6 +3193,7 @@
             console.error("Falha ao iniciar os recursos PWA:", error);
         }
     </script>
-    <script type="module" src="./app.js?v=mobile-audio-v1"></script>
+    <script type="module" src="./app.js?v=portuguese-titles-v1"></script>
+    <script type="module" src="./assets/js/site-ui.js"></script>
 </body>
 </html>

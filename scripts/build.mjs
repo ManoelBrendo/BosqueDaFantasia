@@ -3,7 +3,7 @@ import path from "node:path";
 
 const root = process.cwd();
 const dist = path.join(root, "dist");
-const ignored = new Set([".git", "dist", "node_modules"]);
+const ignored = new Set([".git", "dist", "node_modules", "artifacts", "backend", "docs", "scripts", ".env", ".env.local"]);
 const ignoredNested = new Set([
     path.join("backend", "data"),
     path.join("backend", "uploads")

@@ -90,6 +90,33 @@ Saida esperada:
 
 ## Rodadas planejadas
 
+### Rodada 0: fechar a autorizacao administrativa antes de producao
+
+**Prioridade:** P0 / fundacao implementada; segue bloqueador para disponibilizar operacoes administrativas ate a validacao em staging e implementacao das rotas de produto.
+
+**Requisito detalhado:** `docs/REQUISITOS-FUNCIONALIDADES.md`, secao "Requisito prioritario: autenticacao e autorizacao administrativa".
+
+Objetivo:
+- Remover a credencial Master embutida no navegador e garantir que toda permissao administrativa seja decidida pelo backend.
+
+Entregas:
+- Papel `reader` aplicado por padrao e papel `admin` concedido apenas por provisionamento operacional.
+- Migracao conservadora: contas antigas sem papel viram `reader`; nenhuma elevacao automatica.
+- Middleware de autorizacao deny-by-default com verificacao do usuario e papel atuais no backend.
+- Frontend sem segredo Master, sem fallback administrativo local e com estados claros para nao autenticado, sem permissao, sessao expirada e API indisponivel.
+- Runbook para segredo JWT, HTTPS, provisionamento, rotacao e recuperacao de acesso.
+
+Checagem em W:
+- W1: inventariar operacoes privilegiadas e decidir se admin precisa de revogacao imediata de sessao.
+- W2: fechar contrato de papel, migration, provisionamento, rotas e resposta de erros.
+- W3: implementar backend e frontend em etapas pequenas, mantendo cadastro publico sempre como leitor.
+- W4: testar anonimo, token local, leitor, admin, papel revogado, usuario desativado, segredo ausente e regressao de leitor.
+- W5: validar em staging, revisar artefato publico e logs, registrar procedimento operacional antes do rollout.
+
+Bloqueio de producao:
+- Nao disponibilizar interface ou operacao administrativa remota ate todos os criterios RF-SEC-001 a RF-SEC-010 e de aceite serem atendidos.
+- Confirmar o fluxo real de provisionamento do primeiro administrador e remover a credencial publicada do historico/artefatos conforme a estrategia de resposta a segredo exposto.
+
 ### Rodada 1: consolidar login e API legada
 
 Objetivo:

@@ -46,7 +46,10 @@ Variaveis importantes:
 ```text
 BOSQUE_API_HOST=0.0.0.0
 BOSQUE_API_PORT=4180
-BOSQUE_JWT_SECRET=troque-por-um-segredo-longo
+BOSQUE_JWT_SECRET=<segredo-aleatorio-com-pelo-menos-32-caracteres>
+BOSQUE_CORS_ORIGIN=https://seu-site.example.com
+BOSQUE_BOOTSTRAP_ADMIN_EMAIL=
+BOSQUE_BOOTSTRAP_ADMIN_PASSWORD=
 AMAZON_ACCESS_KEY=
 AMAZON_SECRET_KEY=
 AMAZON_PARTNER_TAG=

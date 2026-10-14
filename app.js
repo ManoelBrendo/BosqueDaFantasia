@@ -398,14 +398,14 @@ const buildBookSaveButtonMarkup = (book) => `
 const buildCuratedMarkup = (book) => `
     <article class="featured-card">
         ${buildBookSaveButtonMarkup(book)}
-        <a class="book-card-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}" aria-label="Abrir a ficha editorial de ${escapeHtml(book.title)}">
+        <a class="book-card-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}" aria-label="Abrir a ficha editorial de ${escapeHtml(book.portugueseTitle || book.title)}">
             <div class="book-cover-shell">
-                <img data-book-cover-id="${escapeHtml(book.id)}" src="${escapeHtml(book.cover)}" alt="Capa de ${escapeHtml(book.title)}" loading="lazy" decoding="async">
+                <img data-book-cover-id="${escapeHtml(book.id)}" src="${escapeHtml(book.cover)}" alt="Capa de ${escapeHtml(book.portugueseTitle || book.title)}" loading="lazy" decoding="async">
             </div>
             <div class="book-copy">
                 <span class="book-ribbon">${escapeHtml(book.aura)}</span>
-                <h3>${escapeHtml(book.title)}</h3>
-                <p class="book-original">${escapeHtml(book.originalTitle)}</p>
+                <h3>${escapeHtml(book.portugueseTitle || book.title)}</h3>
+                <p class="book-original">${escapeHtml(book.titleNote || (book.originalTitle !== book.title ? `Título original: ${book.originalTitle}` : "Título em português"))}</p>
                 <p class="book-description">${escapeHtml(book.description)}</p>
                 ${buildBookChipRowMarkup(book)}
                 <div class="book-meta">
@@ -784,13 +784,13 @@ const updatePurchasePanel = (bookInput) => {
     const book = normalizeBook(bookInput);
     state.currentBookId = book.id;
 
-    elements.purchaseTitle.textContent = book.title;
+    elements.purchaseTitle.textContent = book.portugueseTitle || book.title;
     elements.purchaseOriginal.textContent = book.originalTitle
         ? `T\u00EDtulo original: ${book.originalTitle}`
         : "T\u00EDtulo exibido como veio do acervo.";
     elements.purchaseMeta.textContent = `${book.author} | ${book.year}`;
     elements.purchaseDescription.textContent = book.description;
-    elements.purchaseCover.alt = `Capa de ${book.title}`;
+    elements.purchaseCover.alt = `Capa de ${book.portugueseTitle || book.title}`;
     applyBookCover(elements.purchaseCover, book);
     elements.purchaseLink.href = book.purchaseUrl || "#compra";
     elements.purchaseLink.textContent = book.publicDomain ? "Abrir leitura pública" : "Abrir link de compra";
@@ -798,7 +798,7 @@ const updatePurchasePanel = (bookInput) => {
     elements.purchaseWhyRead.textContent = book.whyRead;
     elements.purchaseReaderProfile.textContent = book.readerProfile;
     elements.purchaseAuthorNote.textContent = book.authorNote;
-    elements.purchaseHint.textContent = `Quando o link real de ${book.title} estiver pronto, basta trocar o destino deste bot\u00E3o.`;
+    elements.purchaseHint.textContent = `Quando o link real de ${book.portugueseTitle || book.title} estiver pronto, basta trocar o destino deste bot\u00E3o.`;
     elements.purchaseSignalRow.innerHTML = [
         book.aura,
         book.difficulty,
@@ -1015,7 +1015,8 @@ const runSearch = async ({ query, append = false, page = 1, label } = {}) => {
         state.controller.abort();
     }
 
-    state.controller = new AbortController();
+    const controller = new AbortController();
+    state.controller = controller;
     updateStatus({ loading: true });
 
     try {
@@ -1023,16 +1024,17 @@ const runSearch = async ({ query, append = false, page = 1, label } = {}) => {
             query,
             page,
             limit: RESULTS_PER_PAGE,
-            signal: state.controller.signal
+            signal: controller.signal
         });
 
+        if (controller !== state.controller || controller.signal.aborted) return;
         const nextBooks = sortBooksByTitle(result.books.map(normalizeBook));
         registerBooks(nextBooks);
         state.query = query;
         state.page = page;
         state.total = result.total;
         state.lastSource = result.source || "remote";
-        state.rawResultBooks = append ? [...state.rawResultBooks, ...nextBooks] : nextBooks;
+        state.rawResultBooks = [...new Map((append ? [...state.rawResultBooks, ...nextBooks] : nextBooks).map(book => [book.id, book])).values()];
 
         setActiveTheme(label || prettyQuery(query), query, { syncInput: !append });
         applyFiltersAndRender();
@@ -1055,7 +1057,7 @@ const runSearch = async ({ query, append = false, page = 1, label } = {}) => {
 
         scheduleUiStateSave();
     } catch (error) {
-        if (error.name === "AbortError") {
+        if (controller !== state.controller || controller.signal.aborted || error.name === "AbortError") {
             return;
         }
 
@@ -1381,6 +1383,12 @@ const initAffinityInteractions = () => {
 };
 
 const initHeroCarousel = () => {
+    elements.heroCarouselImage.addEventListener("error", () => {
+        if (elements.heroCarouselImage.getAttribute("src") !== "assets/forest-fallback.svg") {
+            elements.heroCarouselImage.src = "assets/forest-fallback.svg";
+            elements.heroCarouselImage.alt = "Ilustração de um bosque sob o luar";
+        }
+    });
     setHeroGallery("elfica");
     elements.heroCarouselPrevious.addEventListener("click", () => moveHeroCarousel(-1));
     elements.heroCarouselNext.addEventListener("click", () => moveHeroCarousel(1));

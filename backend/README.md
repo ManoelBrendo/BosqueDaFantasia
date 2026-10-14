@@ -2,6 +2,24 @@
 
 Backend opcional para conta centralizada, arquivos e integracao Amazon. O site funciona com login local mesmo sem este processo rodando.
 
+## Autorizacao administrativa
+
+A fundacao de autenticacao e autorizacao esta implementada no backend: cadastro publico sempre cria `reader`, contas antigas sem papel sao migradas para `reader`, e somente o provisionamento operacional pode criar o primeiro `admin`. Tokens locais do navegador nao autenticam no backend; cada requisicao protegida consulta o usuario e o papel atuais no banco.
+
+O prefixo `/api/admin/*` exige sessao remota de administrador e nega por padrao. Ainda nao existem rotas administrativas de produto: uma chamada autorizada para uma rota inexistente recebe `404`. Nao publique operacoes administrativas antes de implementar e testar cada rota de produto.
+
+Em producao, configure `BOSQUE_JWT_SECRET` com pelo menos 32 caracteres aleatorios e use HTTPS. A conta bootstrap precisa de senha exclusiva com pelo menos 12 caracteres. Segredos ficam somente no ambiente do processo; nunca no frontend, repositorio ou logs.
+
+### Primeiro administrador
+
+Defina `BOSQUE_BOOTSTRAP_ADMIN_EMAIL` e `BOSQUE_BOOTSTRAP_ADMIN_PASSWORD` no ambiente do processo da API. Use senha exclusiva com pelo menos 12 caracteres, configure ambas apenas durante o primeiro inicio e remova-as do ambiente depois que o log confirmar o provisionamento. A inicializacao cria apenas o primeiro administrador; se ja houver admin, a mesma identidade e aceita como repeticao idempotente, e qualquer tentativa de promover outra conta falha. Contas antigas sem papel sao migradas para `reader`.
+
+`BOSQUE_JWT_SECRET` e obrigatorio em producao e deve ter ao menos 32 caracteres aleatorios. Restrinja a API a HTTPS. A senha de bootstrap e o segredo JWT nao devem ser commitados nem registrados em logs.
+
+O espaco `/api/admin/*` exige sessao remota com papel `admin`; como ainda nao ha rotas administrativas de produto implementadas, requests autorizados recebem `404`. Tokens de contas locais nao sao reconhecidos pela API. O endpoint `/api/me` retorna o papel efetivo consultado no servidor.
+
+O teste de integracao isolado da autenticacao roda com `npm test`; ele cria seu banco temporario e nao altera `backend/data/bosque-db.json`.
+
 ## Banco de dados local
 
 As contas e os registros de arquivos ficam em `backend/data/bosque-db.json`.

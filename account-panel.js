@@ -1,4 +1,4 @@
-import { bosqueApi } from "./account-api.js?v=local-auth-v3";
+import { bosqueApi } from "./account-api.js?v=server-roles-v1";
 import { BosqueLibraryDb } from "./library-db.js";
 import { affinityQuestions, readingPaths } from "./site-data.js";
 import { recommendFromAnswers } from "./recommendation-engine.js";
@@ -798,7 +798,7 @@ const ensureAccountWidget = () => {
         return widget;
     }
 
-    const topbarInner = document.querySelector(".topbar-inner");
+    const topbarInner = document.querySelector(".site-header-inner") || document.querySelector(".topbar-inner");
 
     if (!topbarInner) {
         return null;
@@ -815,13 +815,14 @@ const ensureAccountWidget = () => {
                 <span>Perfil literário</span>
             </span>
         </button>
-        <aside id="account-panel" class="account-panel" aria-label="Painel da conta"></aside>
+        <aside id="account-panel" class="account-panel" inert aria-label="Painel da conta"></aside>
     `;
     topbarInner.append(widget);
 
     widget.querySelector("#account-trigger")?.addEventListener("click", async () => {
         await renderAccountWidget(activeUser || bosqueApi.getStoredUser(), { refresh: true });
         const isOpen = widget.classList.toggle("is-open");
+        widget.querySelector("#account-panel").inert = !isOpen;
         widget.querySelector("#account-trigger")?.setAttribute("aria-expanded", String(isOpen));
 
         if (isOpen) {
@@ -832,6 +833,7 @@ const ensureAccountWidget = () => {
     document.addEventListener("click", (event) => {
         if (!widget.contains(event.target)) {
             widget.classList.remove("is-open");
+            widget.querySelector("#account-panel").inert = true;
             widget.querySelector("#account-trigger")?.setAttribute("aria-expanded", "false");
         }
     });
@@ -842,6 +844,7 @@ const ensureAccountWidget = () => {
 const closeAccountWidget = () => {
     const widget = document.getElementById("account-widget");
     widget?.classList.remove("is-open", "is-ready");
+    if (widget) widget.querySelector("#account-panel").inert = true;
     widget?.querySelector("#account-trigger")?.setAttribute("aria-expanded", "false");
 };
 
@@ -960,17 +963,20 @@ const ensureAuthGate = () => {
     gate = document.createElement("section");
     gate.className = "auth-gate";
     gate.setAttribute("aria-labelledby", "auth-title");
+    gate.setAttribute("role", "dialog");
+    gate.setAttribute("aria-modal", "true");
     gate.innerHTML = `
         <div class="auth-card">
+            <button id="auth-dismiss" class="auth-dismiss" type="button" aria-label="Fechar acesso à conta">Fechar ×</button>
             <div class="auth-copy">
                 <div>
                     <p class="eyebrow">Portal de entrada</p>
                     <h2 id="auth-title">Entre no Bosque.</h2>
-                    <p>Crie uma conta para acessar o acervo, o oráculo e as trilhas de fantasia.</p>
+                    <p>Entre para acessar sua conta. Você também pode continuar explorando o acervo sem entrar.</p>
                 </div>
             </div>
             <div class="auth-forms">
-                <div class="auth-tabs" role="tablist" aria-label="Acesso">
+                <div class="auth-tabs" role="group" aria-label="Escolher entrar ou criar conta">
                     <button class="auth-tab is-active" type="button" data-auth-tab="login">Entrar</button>
                     <button class="auth-tab" type="button" data-auth-tab="register">Criar conta</button>
                 </div>
@@ -978,21 +984,22 @@ const ensureAuthGate = () => {
                 <p id="auth-api-status" class="auth-api-status" data-tone="idle">Preparando acesso...</p>
                 <div id="auth-loading" class="auth-loading" aria-live="polite">Abrindo o portal...</div>
                 <form id="login-form" class="auth-form is-active">
-                    <input name="email" type="email" placeholder="E-mail" autocomplete="email" required>
-                    <input name="password" type="password" placeholder="Senha" autocomplete="current-password" required>
+                    <input name="email" type="email" aria-label="E-mail" placeholder="E-mail" autocomplete="email" required>
+                    <input name="password" type="password" aria-label="Senha" placeholder="Senha" autocomplete="current-password" required>
                     <button class="button primary" type="submit">Abrir portal</button>
                 </form>
                 <form id="register-form" class="auth-form">
-                    <input name="name" type="text" placeholder="Nome" autocomplete="name" required>
+                    <input name="name" type="text" aria-label="Nome" placeholder="Nome" autocomplete="name" required>
                     <input name="email" type="email" placeholder="E-mail" autocomplete="email" required>
-                    <input name="password" type="password" placeholder="Senha com 6+ caracteres" autocomplete="new-password" required>
+                    <input name="password" type="password" aria-label="Senha com pelo menos 6 caracteres" placeholder="Senha com 6+ caracteres" autocomplete="new-password" required>
                     <button class="button secondary" type="submit">Criar conta e entrar</button>
                 </form>
-                <p class="auth-note">A conta local deste navegador libera o acesso sem exigir API rodando e preserva favoritos e trilhas neste dispositivo.</p>
+                <p class="auth-note">Sua conta e suas preferências ficam salvas neste dispositivo quando você usa o acesso local.</p>
             </div>
         </div>
     `;
     document.body.prepend(gate);
+    gate.querySelector("#auth-dismiss").addEventListener("click", () => unlockSite());
     return gate;
 };
 
@@ -1141,19 +1148,19 @@ const bindForms = () => {
 
 const syncApiHealth = async () => {
     if (!bosqueApi.canUseRemoteApi()) {
-        setApiStatus("Acesso local pronto. Nenhuma API precisa estar rodando.", "local");
+        setApiStatus("Sua conta será salva neste navegador.", "local");
         return;
     }
 
-    setApiStatus("Verificando conexão com a API legada...", "idle");
+    setApiStatus("Verificando acesso à conta...", "idle");
 
     try {
         const health = await bosqueApi.health();
         setApiStatus(health?.amazonConfigured
-            ? "API legada conectada. Login remoto e Amazon estão disponíveis."
-            : "API legada conectada. Login remoto disponível.", "ready");
+            ? "Acesso à conta disponível."
+            : "Acesso à conta disponível.", "ready");
     } catch {
-        setApiStatus("API legada indisponível. O acesso local neste navegador será usado.", "local");
+        setApiStatus("Usaremos a conta salva neste navegador.", "local");
     }
 };
 

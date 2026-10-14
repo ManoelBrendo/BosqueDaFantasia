@@ -1,6 +1,7 @@
+import { buildSearchQuery } from "./search-policy.js";
 const OPEN_LIBRARY_SEARCH_URL = "https://openlibrary.org/search.json";
 const OPEN_LIBRARY_COVER_SIZE = "M";
-const SEARCH_CACHE_PREFIX = "bosque-cache:";
+const SEARCH_CACHE_PREFIX = "bosque-cache:portuguese-titles-v1:";
 const SEARCH_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
 const OPEN_LIBRARY_FIELDS = [
     "key",
@@ -17,7 +18,13 @@ const OPEN_LIBRARY_FIELDS = [
     "ia",
     "public_scan_b",
     "subject",
-    "language"
+    "language",
+    "editions",
+    "editions.title",
+    "editions.language",
+    "editions.key",
+    "editions.cover_i",
+    "editions.ebook_access"
 ].join(",");
 
 const SUBJECT_TRANSLATIONS = new Map([
@@ -61,11 +68,88 @@ const TITLE_TRANSLATIONS = new Map([
     ["the well at the world's end", "O Poço no Fim do Mundo"],
     ["alice's adventures in wonderland", "Alice no País das Maravilhas"],
     ["the wonderful wizard of oz", "O Maravilhoso Mágico de Oz"],
-    ["peter and wendy", "Peter Pan"],
-    ["a wizard of earthsea", "Um Feiticeiro de Terramar"]
+    ["the lord of the rings", "O Senhor dos Anéis"],
+    ["the hobbit", "O Hobbit"],
+    ["the chronicles of narnia", "As Crônicas de Nárnia"],
+    ["harry potter and the philosopher's stone", "Harry Potter e a Pedra Filosofal"],
+    ["the english edition", "A Edição em Inglês"],
+    ["english edition", "Edição em Inglês"]
 ]);
 
-const translateBookTitle = (title) => TITLE_TRANSLATIONS.get(String(title || "").replace(/\s+/g, " ").trim().toLowerCase()) || title;
+const TITLE_WORD_TRANSLATIONS = new Map([
+    ["the", "o"],
+    ["a", "a"],
+    ["an", "um"],
+    ["and", "e"],
+    ["of", "de"],
+    ["at", "em"],
+    ["in", "em"],
+    ["on", "sobre"],
+    ["to", "para"],
+    ["from", "de"],
+    ["the", "o"],
+    ["king", "rei"],
+    ["queen", "rainha"],
+    ["princess", "princesa"],
+    ["prince", "príncipe"],
+    ["daughter", "filha"],
+    ["son", "filho"],
+    ["child", "criança"],
+    ["children", "crianças"],
+    ["book", "livro"],
+    ["books", "livros"],
+    ["chronicles", "crônicas"],
+    ["tales", "contos"],
+    ["story", "história"],
+    ["stories", "histórias"],
+    ["world", "mundo"],
+    ["land", "terra"],
+    ["lands", "terras"],
+    ["wood", "floresta"],
+    ["forest", "floresta"],
+    ["house", "casa"],
+    ["castle", "castelo"],
+    ["road", "estrada"],
+    ["journey", "jornada"],
+    ["adventure", "aventura"],
+    ["adventures", "aventuras"],
+    ["magic", "magia"],
+    ["wizard", "mago"],
+    ["witch", "bruxa"],
+    ["dragon", "dragão"],
+    ["dragons", "dragões"],
+    ["goblin", "goblin"],
+    ["goblins", "goblins"],
+    ["dark", "sombrio"],
+    ["light", "luz"],
+    ["last", "último"],
+    ["first", "primeiro"],
+    ["great", "grande"],
+    ["little", "pequeno"],
+    ["wonderful", "maravilhoso"],
+    ["secret", "secreto"],
+    ["english", "inglês"],
+    ["edition", "edição"],
+    ["editions", "edições"]
+]);
+
+const translateTitle = (title) => {
+    const original = normalizeSpaces(title);
+    const knownTranslation = TITLE_TRANSLATIONS.get(normalizeLookup(original));
+
+    if (knownTranslation) return knownTranslation;
+
+    const translated = original
+        .split(/(\s+|[:;,.!?'"-])/)
+        .map((part) => {
+            const translation = TITLE_WORD_TRANSLATIONS.get(normalizeLookup(part));
+            return translation ? translation : part;
+        })
+        .join("")
+        .replace(/\s+([:;,.!?])/g, "$1");
+
+    return translated ? translated.charAt(0).toUpperCase() + translated.slice(1) : original;
+};
 
 const OPEN_LICENSE_FALLBACKS = [
     {
@@ -465,8 +549,18 @@ const buildCoverCandidates = (doc) => {
 };
 
 const buildBookRecord = (doc, placeholderCover) => {
+    const portugueseEdition = (doc.editions?.docs || []).find(item => item.title && item.language?.some(language => {
+        const key = typeof language === "string" ? language : language.key;
+        return key === "por" || key === "pt" || key === "/languages/por";
+    }));
+    const edition = (doc.editions?.docs || []).find(item => item.title && item.language?.some(language => {
+        const key = typeof language === "string" ? language : language.key;
+        return key === "eng" || key === "/languages/eng";
+    }));
     const author = doc.author_name?.[0] || "Autor nao informado";
     const year = doc.first_publish_year || "Ano nao informado";
+    const originalTitle = normalizeSpaces(edition?.title || doc.title);
+    const translatedTitle = normalizeSpaces(portugueseEdition?.title || translateTitle(originalTitle));
     const subjects = pickSubjects(doc.subject || []);
     const climateKey = inferClimateKey(subjects);
     const difficulty = inferDifficulty({
@@ -477,13 +571,20 @@ const buildBookRecord = (doc, placeholderCover) => {
 
     return {
         id: doc.key.replace("/works/", "") || `${doc.title}-${doc.first_publish_year || "sem-ano"}`,
-        title: translateBookTitle(doc.title),
-        originalTitle: doc.title,
+        title: translatedTitle,
+        titleLanguage: "pt",
+        titleNote: translatedTitle !== originalTitle ? `Título original: ${originalTitle}` : "Título em português",
+        editionId: portugueseEdition?.key || edition?.key || "",
+        originalTitle,
         author,
         year,
         editionCount: doc.edition_count || 0,
         cover: placeholderCover,
-        coverCandidates: buildCoverCandidates(doc),
+        coverCandidates: portugueseEdition
+            ? unique([portugueseEdition.cover_i ? buildOpenLibraryCoverUrl("id", portugueseEdition.cover_i) : "", portugueseEdition.key ? buildOpenLibraryCoverUrl("olid", portugueseEdition.key.replace("/books/", "")) : ""])
+            : edition
+                ? unique([edition.cover_i ? buildOpenLibraryCoverUrl("id", edition.cover_i) : "", edition.key ? buildOpenLibraryCoverUrl("olid", edition.key.replace("/books/", "")) : ""])
+                : buildCoverCandidates(doc),
         description: buildPortugueseDescription({
             author,
             year,
@@ -494,8 +595,8 @@ const buildBookRecord = (doc, placeholderCover) => {
         difficulty: difficulty.label,
         difficultyKey: difficulty.key,
         themes: subjects.length > 0 ? subjects : ["fantasia"],
-        publicDomain: Boolean(doc.public_scan_b || doc.ebook_access === "public"),
-        readUrl: Array.isArray(doc.ia) && doc.ia.length > 0
+        publicDomain: (portugueseEdition || edition) ? (portugueseEdition || edition).ebook_access === "public" : Boolean(doc.public_scan_b || doc.ebook_access === "public"),
+        readUrl: (portugueseEdition || edition)?.key ? `https://openlibrary.org${(portugueseEdition || edition).key}` : Array.isArray(doc.ia) && doc.ia.length > 0
             ? `https://archive.org/details/${doc.ia[0]}`
             : `https://openlibrary.org${doc.key}`,
         readerProfile: buildReaderProfile({
@@ -520,26 +621,16 @@ const buildBookRecord = (doc, placeholderCover) => {
     };
 };
 
-const hasPortugueseEdition = (doc) => {
-    if (!Array.isArray(doc.language) || doc.language.length === 0) {
-        return true;
-    }
-
-    return doc.language.some((language) => {
-        const code = typeof language === "string" ? language : language.key || language.code || "";
-        return code === "por" || code.endsWith("/por");
-    });
-};
-
 export class OpenLibraryCatalogApi {
     constructor() {
         this.cache = new Map();
         this.placeholderCover = buildFallbackCover();
     }
 
-    buildUrl({ query, page = 1, limit = 9 }) {
+    buildUrl({ query, page = 1, limit = 9, filters = {} }) {
         const url = new URL(OPEN_LIBRARY_SEARCH_URL);
-        const normalizedQuery = query.includes("language:") ? query : `${query} language:por`;
+        const normalizedQuery = buildSearchQuery(query, filters);
+        url.searchParams.set("lang", "en");
         url.searchParams.set("q", normalizedQuery);
         url.searchParams.set("fields", OPEN_LIBRARY_FIELDS);
         url.searchParams.set("page", String(page));
@@ -547,9 +638,10 @@ export class OpenLibraryCatalogApi {
         return url;
     }
 
-    async searchBooks({ query, page = 1, limit = 9, signal } = {}) {
+    async searchBooks({ query, page = 1, limit = 9, signal, filters = {} } = {}) {
+        signal?.throwIfAborted();
         const normalizedQuery = (query || "subject:fantasy").trim();
-        const url = this.buildUrl({ query: normalizedQuery, page, limit }).toString();
+        const url = this.buildUrl({ query: normalizedQuery, page, limit, filters }).toString();
 
         if (this.cache.has(url)) {
             return this.cache.get(url);
@@ -567,7 +659,7 @@ export class OpenLibraryCatalogApi {
             headers: {
                 Accept: "application/json"
             },
-            signal
+            signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000)
         });
 
         if (!response.ok) {
@@ -575,11 +667,14 @@ export class OpenLibraryCatalogApi {
         }
 
         const payload = await response.json();
+        signal?.throwIfAborted();
         const result = {
-            total: payload.numFound || 0,
+            source: "remote",
+            total: payload.numFound ?? payload.num_found ?? 0,
             page,
+            hasMore: page * limit < (payload.numFound ?? payload.num_found ?? 0) && (payload.docs || []).length > 0,
             books: (payload.docs || [])
-                .filter((doc) => doc.title && doc.key && hasPortugueseEdition(doc))
+                .filter((doc) => doc.title && doc.key)
                 .map((doc) => buildBookRecord(doc, this.placeholderCover))
         };
 
@@ -588,22 +683,13 @@ export class OpenLibraryCatalogApi {
         return result;
     }
 
-    async searchPublicDomainBooks({ query = "subject:fantasy", page = 1, limit = 9, signal } = {}) {
-        const publicQuery = `(${query}) has_fulltext:true ebook_access:public`;
-        const result = await this.searchBooks({
-            query: publicQuery,
-            page,
-            limit,
-            signal
-        });
+    async searchPublicDomainBooks(options = {}) {
+        return this.searchBooks({ ...options, filters: { ...options.filters, publicOnly: true } });
+    }
 
-        return {
-            ...result,
-            books: result.books.map((book) => ({
-                ...book,
-                publicDomain: true,
-                purchaseUrl: book.readUrl || book.purchaseUrl
-            }))
-        };
+    async getBook(id, { signal } = {}) {
+        if (!/^OL\d+W$/.test(id)) return null;
+        const result = await this.searchBooks({ query: `key:/works/${id}`, limit: 1, signal });
+        return result.books.find(book => book.id === id) || null;
     }
 }

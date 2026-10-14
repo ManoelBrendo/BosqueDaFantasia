@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Acervo vivo de livros de fantasia com busca por API, temas e descrições para explorar novas leituras.">
-    <meta name="theme-color" content="#f8f4eb">
+    <meta name="theme-color" content="#10251f">
     <meta property="og:title" content="Bosque da Fantasia | Acervo">
     <meta property="og:description" content="Pesquise livros de fantasia em um grande catálogo com visual de pergaminho e rotas por tema.">
     <meta property="og:type" content="website">
@@ -258,98 +258,93 @@
             .hero { padding-top: 3.3rem; }
         }
     </style>
+    <link rel="stylesheet" href="./assets/site-polish.css">
+    <link rel="stylesheet" href="./assets/design-system.css">
 </head>
-<body>
-    <header class="topbar">
-        <div class="container topbar-inner">
-            <a class="brand" href="index.html">
-                <span class="brand-mark">*</span>
-                <span>Bosque da Fantasia</span>
-            </a>
-            <nav aria-label="Navegação principal">
-                <a href="index.html">Início</a>
-                <a href="livros.html">Acervo</a>
-                <a href="#temas">Temas</a>
-                <a href="#resultados">Resultados</a>
+<body class="page-catalog">
+    <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-brand" href="index.html" aria-label="Bosque da Fantasia — início"><img src="bosque-icon.svg" width="40" height="40" alt=""><span>Bosque da Fantasia<small>Histórias para atravessar mundos</small></span></a>
+            <button id="site-menu-toggle" class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" hidden>Menu</button>
+            <nav id="primary-navigation" class="site-navigation" aria-label="Navegação principal">
+                <a href="index.html" >Início</a>
+                <a href="livros.html" aria-current="page">Acervo</a>
+                <a href="index.html#afinidade">Descobrir meu perfil</a>
+                <a href="index.html#estante">Minha estante</a>
+                <a class="nav-account" href="login.html" >Entrar <span aria-hidden="true">↗</span></a>
             </nav>
         </div>
     </header>
 
-    <main>
-        <section class="container hero" data-aos="fade-up">
-            <div class="animate__animated animate__fadeIn">
-                <p class="eyebrow">Acervo vivo</p>
+    <main id="main-content" tabindex="-1">
+        <section class="container hero catalog-hero">
+            <div class="catalog-intro">
+                <p class="eyebrow">A biblioteca do bosque</p>
                 <h1 id="catalog-title">Acervo para Fantasia</h1>
                 <p id="catalog-summary" class="lead">Pesquise por autor, saga, criatura, magia ou abra um dos assuntos do pergaminho logo abaixo.</p>
-                <div style="margin-top: 1.4rem; display: flex; flex-wrap: wrap; gap: 0.8rem;">
-                    <a class="button primary" href="#resultados">Ver livros</a>
-                    <a class="button" href="index.html">Voltar ao portal principal</a>
-                </div>
+
             </div>
 
             <aside class="hero-card">
-                <p class="eyebrow">Barra em pergaminho</p>
-                <h2 style="font-size: 2rem;">Busque o que quiser no catálogo e transforme a mesma página em várias rotas temáticas.</h2>
-                <p>O acervo usa a busca da Open Library para abrir muitas frentes de assunto sem perder o mesmo layout do site.</p>
+                <p class="eyebrow">Encontre sua próxima história</p>
+                <h2 class="search-heading">Qual mundo você quer explorar?</h2>
+                <p class="search-description">Busque por título, autor ou tema. Títulos em inglês, descobertas sem fronteiras.</p>
                 <form id="catalog-search-form" class="search-parchment">
-                    <label class="mini-label" for="catalog-search">Pergaminho de busca</label>
+                    <label class="mini-label" for="catalog-search">Título, autor ou tema</label>
                     <div class="search-shell">
                         <input id="catalog-search" type="search" placeholder="Procure por livro, autor, criatura, magia ou assunto">
                         <button id="catalog-submit" class="button primary" type="submit">Buscar</button>
                     </div>
+                <details id="catalog-filter-panel" class="filter-panel"><summary>Refinar pesquisa <span id="filter-count"></span></summary><div class="catalog-filters">
+                        <label>Autor<input id="catalog-author" type="search" placeholder="Ex.: Tolkien" maxlength="160"></label>
+                        <label>Publicado a partir de<input id="catalog-from" type="number" min="1" max="9999" placeholder="Ex.: 1900"></label>
+                        <label>Até<input id="catalog-to" type="number" min="1" max="9999" placeholder="Ex.: 2026"></label>
+                        <label class="availability-filter"><input id="catalog-public" type="checkbox"> Com leitura disponível</label>
+                        <button id="catalog-reset" class="button" type="button">Limpar filtros</button>
+                    </div>
+                    </details><p class="filter-help">Os filtros consultam todo o catálogo. Títulos portugueses conhecidos também são reconhecidos.</p>
                 </form>
             </aside>
         </section>
 
-        <section class="section" id="temas">
-            <div class="container">
-                <div class="section-head">
-                    <div>
-                        <p class="eyebrow">Rotas temáticas</p>
-                        <h2>Assuntos que já podem virar páginas do mesmo padrão</h2>
-                    </div>
-                    <p>Cada cartão abaixo abre a mesma estrutura de página com outra consulta no acervo. É uma base pronta para crescer em novas trilhas.</p>
-                </div>
-                <div id="topics-grid" class="topics-grid"></div>
-            </div>
-        </section>
+
 
         <section class="section" id="resultados">
             <div class="container">
                 <div class="section-head">
                     <div>
                         <p class="eyebrow">Resultados</p>
-                        <h2>Livros com capa, resumo rápido e saída preparada para compra</h2>
+                        <h2>Histórias à sua espera</h2>
                     </div>
-                    <p>Ao clicar na capa ou no conteúdo do livro, a pessoa vai para uma rota de compra placeholder pronta para receber o link real depois.</p>
+                    <p>Explore as capas, conheça os autores e abra os detalhes de cada obra.</p>
                 </div>
                 <div class="catalog-tools">
-                    <p id="catalog-status" class="catalog-status">Carregando o acervo do bosque...</p>
+                    <label class="sort-control" for="catalog-sort">Ordenar livros carregados
+                        <select id="catalog-sort"><option value="relevance">Relevância</option><option value="title">Título: A–Z</option></select>
+                    </label>
+                    <p id="catalog-status" role="status" aria-live="polite" class="catalog-status">Carregando o acervo do bosque...</p>
+                    <button id="catalog-retry" class="button" type="button" hidden>Tentar novamente</button>
                     <button id="catalog-load-more" class="button" type="button" hidden>Carregar mais livros</button>
                 </div>
-                <div id="results-grid" class="results-grid"></div>
+                <div id="results-grid" class="results-grid" aria-label="Livros encontrados"></div>
+            </div>
+        </section>
+        <section class="section" id="temas">
+            <div class="container">
+                <div class="section-head">
+                    <div>
+                        <p class="eyebrow">Rotas temáticas</p>
+                        <h2>Escolha seu próximo universo</h2>
+                    </div>
+                    <p>De florestas encantadas a jornadas épicas, encontre uma trilha para o seu momento.</p>
+                </div>
+                <div id="topics-grid" class="topics-grid"></div>
             </div>
         </section>
     </main>
 
-    <footer class="container">
-        <div class="footer-box">
-            <div>
-                <p class="mini-label">Créditos discretos</p>
-                <p>O catálogo usa a Open Library Search API como base de busca, mantendo a mesma atmosfera do portal principal.</p>
-            </div>
-            <details class="footer-disclosure">
-                <summary>Ver fontes do acervo e das trilhas</summary>
-                <div class="footer-disclosure-body">
-                    <ul class="source-list">
-                        <li>Busca e metadados do catálogo: <a href="https://openlibrary.org/search/howto" target="_blank" rel="noreferrer noopener">Open Library Search API</a>.</li>
-                        <li>Capas quando disponíveis: <a href="https://covers.openlibrary.org/" target="_blank" rel="noreferrer noopener">Open Library Covers API</a>.</li>
-                        <li>Trilhas do player: Wikimedia Commons, mantidas iguais às outras páginas.</li>
-                    </ul>
-                </div>
-            </details>
-        </div>
-    </footer>
+<footer class="site-footer"><div><a class="site-brand" href="index.html">Bosque da Fantasia</a><p>Uma boa história é só o começo da jornada.</p></div><nav aria-label="Links do rodapé"><a href="livros.html">Explorar livros</a><a href="index.html#glossario">Glossário</a><a href="CREDITOS-IMAGENS.md">Créditos das imagens</a></nav><span class="footer-signature">Literatura · Imaginação · Descoberta</span></footer>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
@@ -358,6 +353,7 @@
         }
     </script>
     <script type="module" src="./fantasy-effects.js"></script>
-    <script type="module" src="assets/js/books-page.js"></script>
+    <script type="module" src="assets/js/books-page.js?v=portuguese-titles-v1"></script>
+    <script type="module" src="./assets/js/site-ui.js"></script>
 </body>
 </html>

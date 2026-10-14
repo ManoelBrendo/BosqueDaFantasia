@@ -8,9 +8,13 @@
     "dev": "node ./scripts/dev-server.mjs . 4173",
     "api": "node ./backend/server.mjs",
     "preview": "node ./scripts/dev-server.mjs dist 4174",
-    "build": "node ./scripts/build.mjs"
+    "build": "node ./scripts/build.mjs",
+    "test": "node scripts/test-search.mjs && node scripts/test-stage12.mjs && node scripts/test-auth.mjs",
+    "test:browser": "node scripts/test-browser.mjs",
+    "test:accessibility": "node scripts/test-accessibility.mjs"
   },
   "engines": {
     "node": ">=20"
-  }
+  },
+  "type": "module"
 }

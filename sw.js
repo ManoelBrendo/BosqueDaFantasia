@@ -1,6 +1,14 @@
-const SHELL_CACHE = "bosque-shell-v17";
-const RUNTIME_CACHE = "bosque-runtime-v17";
+const SHELL_CACHE = "bosque-shell-v20";
+const RUNTIME_CACHE = "bosque-runtime-v20";
 const APP_SHELL = [
+    "./assets/forest-fallback.svg",
+    "./assets/design-system.css",
+    "./assets/js/site-ui.js",
+    "./search-policy.js",
+    "./login.html",
+    "./login.js",
+    "./login.css",
+    "./assets/site-polish.css",
     "./",
     "./index.html",
     "./livros.html",
@@ -20,9 +28,7 @@ const APP_SHELL = [
     "./recommendation-engine.js",
     "./manifest.webmanifest",
     "./bosque-icon.svg",
-    "./CREDITOS-IMAGENS.md",
-    "./README.md",
-    "./.nojekyll"
+    "./CREDITOS-IMAGENS.md"
 ];
 
 const RUNTIME_HOSTS = new Set([
@@ -75,7 +81,7 @@ self.addEventListener("activate", (event) => {
         caches.keys().then((keys) => {
             return Promise.all(
                 keys
-                    .filter((key) => key !== SHELL_CACHE && key !== RUNTIME_CACHE)
+                    .filter((key) => (key.startsWith("bosque-shell-") || key.startsWith("bosque-runtime-")) && key !== SHELL_CACHE && key !== RUNTIME_CACHE)
                     .map((key) => caches.delete(key))
             );
         }).then(() => self.clients.claim())
@@ -117,6 +123,8 @@ self.addEventListener("fetch", (event) => {
         event.respondWith(cacheFirst(event.request, SHELL_CACHE));
         return;
     }
+
+    if (requestUrl.hostname === "openlibrary.org" && requestUrl.pathname.endsWith(".json")) return;
 
     if (RUNTIME_HOSTS.has(requestUrl.hostname)) {
         event.respondWith(staleWhileRevalidate(event.request, RUNTIME_CACHE));

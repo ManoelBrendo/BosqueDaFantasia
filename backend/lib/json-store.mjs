@@ -20,7 +20,7 @@ const writeDatabase = async (database) => {
         ...database,
         meta: {
             ...(database.meta || {}),
-            schemaVersion: 1,
+            schemaVersion: 2,
             updatedAt: new Date().toISOString()
         }
     };

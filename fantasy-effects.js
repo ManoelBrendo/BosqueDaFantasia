@@ -763,12 +763,13 @@ const addCardLightTracking = () => {
 };
 
 const initFantasyEffects = () => {
+    if (!document.body.classList.contains("page-home")) return;
     addArcaneCanvas();
     addAtmosphere();
     addHeroPortal();
     addFloatingRelics();
-    addCursorWisp();
-    addRealmCompass();
+
+
     addMotionClasses();
     addReveal();
     watchDynamicContent();

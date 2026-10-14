@@ -1,3 +1,4 @@
+import { matchesFilters, resolveSearchTerm } from "./search-policy.js";
 import { BosqueLibraryDb } from "./library-db.js";
 import { OpenLibraryCatalogApi } from "./open-library-api.js";
 
@@ -6,8 +7,8 @@ const FAVORITES_KEY = "favorites";
 const RECENT_QUERIES_KEY = "recent-queries";
 const READING_STATUS_KEY = "reading-status";
 
-const buildQueryId = ({ query, page, limit }) => {
-    return `${query}::${page}::${limit}`;
+const buildQueryId = ({ query, page, limit, filters }) => {
+    return `portuguese-titles-v1::${query}::${page}::${limit}::${JSON.stringify(filters || {})}`;
 };
 
 export class BosqueCatalogApi {
@@ -24,12 +25,14 @@ export class BosqueCatalogApi {
         ]).catch(() => null);
     }
 
-    async searchBooks({ query, page = 1, limit = 9, signal } = {}) {
-        const queryId = buildQueryId({ query, page, limit });
+    async searchBooks({ query, page = 1, limit = 9, signal, filters = {} } = {}) {
+        signal?.throwIfAborted();
+        const queryId = buildQueryId({ query, page, limit, filters });
         const storedQuery = await this.database.getQuery(queryId).catch(() => null);
 
-        if (!navigator.onLine && storedQuery) {
-            return storedQuery;
+        signal?.throwIfAborted();
+        if (navigator.onLine === false && storedQuery) {
+            return { ...storedQuery, source: "offline-cache" };
         }
 
         try {
@@ -37,9 +40,11 @@ export class BosqueCatalogApi {
                 query,
                 page,
                 limit,
-                signal
+                signal,
+                filters
             });
 
+            signal?.throwIfAborted();
             await Promise.all([
                 this.database.putQuery(queryId, result),
                 this.database.storeBooks(result.books)
@@ -47,17 +52,21 @@ export class BosqueCatalogApi {
 
             return result;
         } catch (error) {
+            if (error.name === "AbortError" || signal?.aborted) throw error;
             if (storedQuery) {
-                return storedQuery;
+                return { ...storedQuery, source: "offline-cache" };
             }
 
-            const localBooks = await this.database.searchBooks(query, limit).catch(() => []);
+            const storedBooks = await this.database.searchBooks(resolveSearchTerm(query), 1000).catch(() => []);
 
+            signal?.throwIfAborted();
+            const localBooks = storedBooks.filter(book => book.titleLanguage === "en" && matchesFilters(book, filters));
             if (localBooks.length > 0) {
                 return {
                     total: localBooks.length,
-                    page: 1,
-                    books: localBooks,
+                    page,
+                    hasMore: page * limit < localBooks.length,
+                    books: localBooks.slice((page - 1) * limit, page * limit),
                     source: "offline-db"
                 };
             }
@@ -66,16 +75,8 @@ export class BosqueCatalogApi {
         }
     }
 
-    async searchPublicDomainBooks({ query, page = 1, limit = 9, signal } = {}) {
-        const result = await this.remoteApi.searchPublicDomainBooks({
-            query,
-            page,
-            limit,
-            signal
-        });
-
-        await this.database.storeBooks(result.books).catch(() => null);
-        return result;
+    async searchPublicDomainBooks(options = {}) {
+        return this.searchBooks({ ...options, filters: { ...options.filters, publicOnly: true } });
     }
 
     async saveUiState(payload) {

@@ -3,3 +3,5 @@ dist/
 backend/data/
 backend/uploads/
 backend/.env
+
+artifacts/

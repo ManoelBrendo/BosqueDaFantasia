@@ -125,13 +125,13 @@ const hydrateBookImages = (root) => {
 
 const buildCuratedMarkup = (book) => `
     <article class="featured-card">
-        <a class="book-card-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}" aria-label="Abrir o portal de compra para ${escapeHtml(book.title)}">
+        <a class="book-card-link js-book-link" href="#compra" data-book-id="${escapeHtml(book.id)}" aria-label="Abrir o portal de compra para ${escapeHtml(book.portugueseTitle || book.title)}">
             <div class="book-cover-shell">
-                <img data-book-cover-id="${escapeHtml(book.id)}" src="${escapeHtml(book.cover)}" alt="Capa de ${escapeHtml(book.title)}" loading="lazy" decoding="async">
+                <img data-book-cover-id="${escapeHtml(book.id)}" src="${escapeHtml(book.cover)}" alt="Capa de ${escapeHtml(book.portugueseTitle || book.title)}" loading="lazy" decoding="async">
             </div>
             <div class="book-copy">
                 <span class="book-ribbon">${escapeHtml(book.aura)}</span>
-                <h3>${escapeHtml(book.title)}</h3>
+                <h3>${escapeHtml(book.portugueseTitle || book.title)}</h3>
                 <p class="book-original">${escapeHtml(book.originalTitle)}</p>
                 <p class="book-description">${escapeHtml(book.description)}</p>
                 <div class="book-meta">
@@ -222,7 +222,7 @@ const syncAffinityChoices = () => {
 };
 
 const updatePurchasePanel = (book) => {
-    elements.purchaseTitle.textContent = book.title;
+    elements.purchaseTitle.textContent = book.portugueseTitle || book.title;
     elements.purchaseOriginal.textContent = book.originalTitle
         ? `Título original: ${book.originalTitle}`
         : "Título exibido como veio do acervo.";

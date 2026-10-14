@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Página placeholder para o futuro link de compra dos livros do Bosque da Fantasia.">
-    <meta name="theme-color" content="#f8f4eb">
+    <meta name="description" content="Detalhes, edição e disponibilidade dos livros do Bosque da Fantasia.">
+    <meta name="theme-color" content="#10251f">
     <title>Bosque da Fantasia | Compra</title>
     <style>
         :root {
@@ -122,35 +122,46 @@
             .hero { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="./assets/site-polish.css">
+    <link rel="stylesheet" href="./assets/design-system.css">
 </head>
-<body>
-    <header class="topbar">
-        <div class="container topbar-inner">
-            <a class="brand" href="index.html">
-                <span class="brand-mark">*</span>
-                <span>Bosque da Fantasia</span>
-            </a>
-            <a id="purchase-back" class="button" href="livros.html">Voltar ao acervo</a>
+<body class="page-detail">
+    <a class="skip-link" href="#main-content">Pular para o conteúdo</a>
+    <header class="site-header">
+        <div class="site-header-inner">
+            <a class="site-brand" href="index.html" aria-label="Bosque da Fantasia — início"><img src="bosque-icon.svg" width="40" height="40" alt=""><span>Bosque da Fantasia<small>Histórias para atravessar mundos</small></span></a>
+            <button id="site-menu-toggle" class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" hidden>Menu</button>
+            <nav id="primary-navigation" class="site-navigation" aria-label="Navegação principal">
+                <a href="index.html" >Início</a>
+                <a href="livros.html" >Acervo</a>
+                <a href="index.html#afinidade">Descobrir meu perfil</a>
+                <a href="index.html#estante">Minha estante</a>
+                <a class="nav-account" href="login.html" >Entrar <span aria-hidden="true">↗</span></a>
+            </nav>
         </div>
     </header>
 
-    <main class="container hero animate__animated animate__fadeIn" data-aos="fade-up">
-        <div class="card">
+    <main id="main-content" tabindex="-1" class="container detail-main"><div class="detail-breadcrumb"><a id="purchase-back" class="text-link" href="livros.html">← Voltar aos resultados</a></div><section class="hero detail-layout" aria-labelledby="purchase-title">
+        <div class="card detail-cover">
             <div class="cover-shell">
-                <img id="purchase-cover" src="" alt="Capa do livro selecionado">
+                <img id="purchase-cover" alt="Capa do livro selecionado">
             </div>
         </div>
-        <div class="card">
-            <p class="eyebrow">Link de compra placeholder</p>
+        <div class="card detail-copy">
+            <p class="eyebrow">Conheça esta obra</p>
             <h1 id="purchase-title">Livro do bosque</h1>
             <p id="purchase-meta" class="lead">Autor não informado · Ano não informado</p>
-            <p id="purchase-note" class="muted">O link final de compra será conectado aqui depois.</p>
+            <p id="purchase-edition" class="muted"></p>
+            <h2 class="detail-summary-title">Sobre esta história</h2>
+            <p id="purchase-note" class="muted">Consulte os detalhes e a disponibilidade desta edição.</p>
             <div style="margin-top: 1.2rem; display: flex; flex-wrap: wrap; gap: 0.8rem;">
-                <a class="button" href="livros.html">Voltar para outra busca</a>
+                <button id="purchase-retry" class="button" type="button" hidden>Tentar novamente</button>
+                <a id="purchase-source" class="button primary" target="_blank" rel="noopener noreferrer" hidden>Ver registro no catálogo</a>
                 <a class="button" href="index.html">Voltar ao portal inicial</a>
             </div>
         </div>
-    </main>
+    </section></main>
+<footer class="site-footer"><div><a class="site-brand" href="index.html">Bosque da Fantasia</a><p>Uma boa história é só o começo da jornada.</p></div><nav aria-label="Links do rodapé"><a href="livros.html">Explorar livros</a><a href="index.html#glossario">Glossário</a><a href="CREDITOS-IMAGENS.md">Créditos das imagens</a></nav><span class="footer-signature">Literatura · Imaginação · Descoberta</span></footer>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
@@ -160,5 +171,6 @@
     </script>
     <script type="module" src="./fantasy-effects.js"></script>
     <script type="module" src="assets/js/purchase-page.js"></script>
+    <script type="module" src="./assets/js/site-ui.js"></script>
 </body>
 </html>
