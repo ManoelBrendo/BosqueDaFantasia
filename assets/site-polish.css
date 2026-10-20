@@ -374,6 +374,82 @@ body .site-footer nav a:hover {
     }
 }
 
+/* Shared interaction finish: warm highlights, restrained lift, clear focus. */
+body .book-card,
+body .topic-card,
+body .site-navigation a,
+body .site-footer nav a,
+body .site-brand,
+body .button,
+body .submit-button,
+body .site-menu-toggle {
+    transition:
+        color 180ms ease,
+        background-color 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+body .book-card:focus-within {
+    box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+body .search-shell input:focus-visible,
+body .catalog-filters input:focus-visible,
+body .sort-control select:focus-visible,
+body .login-form input:focus-visible,
+body .home-search input:focus-visible {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(228, 197, 140, .24);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    body .book-card:hover {
+        transform: translateY(-3px);
+        border-color: #9a9c70;
+        box-shadow: 0 14px 30px rgba(2, 9, 6, .38);
+    }
+
+    body .book-card:hover .book-cover-shell img {
+        transform: scale(1.035);
+    }
+
+    body .topic-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(2, 9, 6, .28);
+    }
+
+    body .button:not(:disabled):hover,
+    body .submit-button:not(:disabled):hover,
+    body .site-menu-toggle:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(2, 9, 6, .24);
+    }
+
+    body .site-brand:hover {
+        color: var(--gold-soft);
+    }
+}
+
+body .book-cover-shell img {
+    transition: transform 220ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body .book-card,
+    body .topic-card,
+    body .site-navigation a,
+    body .site-footer nav a,
+    body .site-brand,
+    body .button,
+    body .submit-button,
+    body .site-menu-toggle,
+    body .book-cover-shell img {
+        transition: none;
+    }
+}
+
 @media (max-width: 480px) {
     body .container,
     body .site-footer {
