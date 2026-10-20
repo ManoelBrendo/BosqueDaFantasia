@@ -9,7 +9,7 @@
     "api": "node ./backend/server.mjs",
     "preview": "node ./scripts/dev-server.mjs dist 4174",
     "build": "node ./scripts/build.mjs",
-    "test": "node scripts/test-search.mjs && node scripts/test-stage12.mjs && node scripts/test-auth.mjs && node scripts/test-account-errors.mjs && node scripts/test-render-books.mjs && node scripts/test-site-data-schema.mjs && node scripts/test-search-quality.mjs",
+    "test": "node scripts/test-search.mjs && node scripts/test-stage12.mjs && node scripts/test-auth.mjs && node scripts/test-account-errors.mjs && node scripts/test-render-books.mjs && node scripts/test-render-profile.mjs && node scripts/test-render-affinity.mjs && node scripts/test-site-data-schema.mjs && node scripts/test-search-quality.mjs",
     "test:browser": "node scripts/test-browser.mjs",
     "test:accessibility": "node scripts/test-accessibility.mjs"
   },

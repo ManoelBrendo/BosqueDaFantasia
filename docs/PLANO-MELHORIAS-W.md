@@ -159,24 +159,24 @@ Checagem em W:
 
 ### Rodada 3: arquitetura de frontend
 
-**Status:** em andamento; primeira extração de renderização concluída.
+**Status:** em andamento; renderizadores de livros, autores, glossário e afinidade extraídos e cobertos por testes.
 
 Objetivo:
 - Reduzir tamanho e acoplamento de `app.js` e `index.html`.
 
 Melhorias:
-- Extrair renderizadores: `render-books.js`, `render-affinity.js`, `render-profile.js`.
+- Extrair renderizadores restantes de estado e componentes editoriais ainda acoplados ao `app.js`.
 - Criar modulo de estado para UI, favoritos e recentes.
 - Separar CSS inline de `index.html` em arquivo dedicado.
 - Remover duplicidade entre `index-page.js` e `app.js` se uma versao nao for mais usada.
 - Criar contratos claros para `Book`, `Author`, `ReadingPath` em documentacao.
 
 Checagem em W:
-- W1: extração incremental; iniciado pelos cartões de livros.
-- W2: `render-books.js` recebe escape HTML e consultas de favorito/leitura por callbacks, sem depender do DOM ou do estado global.
-- W3: cartões de acervo, curadoria, favoritos, temas e afinidade movidos sem alterar seus seletores ou atributos de interação.
-- W4: testes de renderização, testes existentes, verificação de arquivos e build passaram.
-- W5: `app.js` deixou de conter os templates de livro; demais extrações e separação do CSS continuam pendentes.
+- W1: extração incremental, priorizando renderização de livros e conteúdo editorial.
+- W2: `render-books.js`, `render-profile.js` e `render-affinity.js` isolam templates e renderização por dados/elementos recebidos, sem ler estado global.
+- W3: renderizadores de cartões de livros, curadoria, favoritos, temas, afinidade, autores e glossário separados sem alterar os seletores de interação.
+- W4: testes isolados de livros, perfil e afinidade, testes existentes, verificação de arquivos e build passaram.
+- W5: `app.js` não contém templates de livros, autores, glossário ou renderizadores do resultado de afinidade; extração do estado de UI e separação do CSS ainda estão pendentes.
 
 ### Rodada 4: dados editoriais e curadoria
 

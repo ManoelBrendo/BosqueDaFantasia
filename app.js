@@ -13,6 +13,8 @@ import {
 } from "./site-data.js?v=authors-pagination-v1";
 import { recommendBooksFromFavorites, recommendFromAnswers } from "./recommendation-engine.js?v=authors-pagination-v2";
 import { createBookRenderers } from "./render-books.js";
+import { createAffinityRenderers } from "./render-affinity.js";
+import { createProfileRenderers } from "./render-profile.js";
 import { getSourceLabel, rankAndDeduplicateBooks } from "./search-quality.js";
 
 const api = new BosqueCatalogApi();
@@ -303,6 +305,11 @@ const {
     isFavorite,
     getReadingStatus: (bookId) => state.readingStatus[bookId] || "want-to-read"
 });
+const profileRenderers = createProfileRenderers({ escapeHtml });
+const affinityRenderers = createAffinityRenderers({
+    escapeHtml,
+    buildBookMarkup: buildAffinityBookMarkup
+});
 
 const serializeUiState = () => {
     return {
@@ -396,49 +403,6 @@ const hydrateBookImages = (root) => {
     });
 };
 
-const buildGlossaryMarkup = (entry) => `
-    <article class="glossary-card">
-        <span class="book-ribbon">${escapeHtml(entry.category)}</span>
-        <h3>${escapeHtml(entry.term)}</h3>
-        <p>${escapeHtml(entry.short)}</p>
-        <p>${escapeHtml(entry.long)}</p>
-    </article>
-`;
-
-const buildAffinityQuestionMarkup = (question) => `
-    <article class="affinity-question-card">
-        <div class="affinity-question-head">
-            <span class="book-ribbon">Pergunta</span>
-            <h3>${escapeHtml(question.title)}</h3>
-        </div>
-        <div class="affinity-choice-grid">
-            ${question.options.map((option) => `
-                <button
-                    class="affinity-choice"
-                    type="button"
-                    data-question-id="${escapeHtml(question.id)}"
-                    data-option-value="${escapeHtml(option.value)}"
-                >
-                    <strong>${escapeHtml(option.label)}</strong>
-                    <span>${escapeHtml(option.description)}</span>
-                </button>
-            `).join("")}
-        </div>
-    </article>
-`;
-
-const buildAuthorCardMarkup = (author) => `
-    <button class="author-card" type="button" data-author-id="${escapeHtml(author.id)}">
-        <span>${escapeHtml(author.status)}</span>
-        <h3>${escapeHtml(author.name)}</h3>
-        <p>${escapeHtml(author.summary)}</p>
-        <ul>
-            <li>Bom para: ${escapeHtml(author.bestFor)}</li>
-            <li>Clima: ${escapeHtml(author.climate)}</li>
-        </ul>
-    </button>
-`;
-
 const buildFilterGroupMarkup = (group) => `
     <article class="filter-group">
         <strong>${escapeHtml(group.label)}</strong>
@@ -500,20 +464,16 @@ const applyGuidedSearch = ({ query, label }) => {
 };
 
 const renderAffinityQuestions = () => {
-    elements.affinityQuestions.innerHTML = affinityQuestions.map(buildAffinityQuestionMarkup).join("");
+    affinityRenderers.renderQuestions({ element: elements.affinityQuestions, questions: affinityQuestions });
 };
 
 const renderAuthors = () => {
-    const authorsPerPage = 6;
-    const totalPages = Math.max(1, Math.ceil(authorsCatalog.length / authorsPerPage));
-    state.authorsPage = Math.min(Math.max(state.authorsPage, 1), totalPages);
-    const startIndex = (state.authorsPage - 1) * authorsPerPage;
-    const visibleAuthors = authorsCatalog.slice(startIndex, startIndex + authorsPerPage);
-    elements.authorsGrid.innerHTML = visibleAuthors.map(buildAuthorCardMarkup).join("");
-    elements.authorsPaginationInfo.textContent = `Página ${state.authorsPage} de ${totalPages} · ${authorsCatalog.length} autores`;
-    elements.authorsPrevious.disabled = state.authorsPage === 1;
-    elements.authorsNext.disabled = state.authorsPage === totalPages;
-    syncAuthorSelection();
+    state.authorsPage = profileRenderers.renderAuthors({
+        elements,
+        authors: authorsCatalog,
+        page: state.authorsPage,
+        activeAuthorId: state.activeAuthorId
+    });
     renderAuthorFocus();
 };
 
@@ -530,35 +490,19 @@ const initAuthorPagination = () => {
 };
 
 const renderAuthorFocus = () => {
-    const author = authorsCatalog.find((entry) => entry.id === state.activeAuthorId) || authorsCatalog[0];
-
-    if (!author) {
-        return;
-    }
-
-    elements.authorFocusName.textContent = author.name;
-    elements.authorFocusSummary.textContent = author.summary;
-    elements.authorFocusBestFor.textContent = author.bestFor;
-    elements.authorFocusClimate.textContent = author.climate;
-    elements.authorFocusStart.textContent = author.startWith;
-    elements.authorFocusLegacy.textContent = author.legacy;
-    elements.authorFocusWorks.innerHTML = author.works
-        .map((work) => `<span class="author-work-chip">${escapeHtml(work)}</span>`)
-        .join("");
+    profileRenderers.renderAuthorFocus({
+        elements,
+        authors: authorsCatalog,
+        activeAuthorId: state.activeAuthorId
+    });
 };
 
 const renderGlossary = () => {
-    const query = state.glossaryQuery.trim().toLowerCase();
-    const visibleEntries = glossaryTerms.filter((entry) => {
-        if (!query) {
-            return true;
-        }
-
-        return `${entry.term} ${entry.category} ${entry.short} ${entry.long}`.toLowerCase().includes(query);
+    profileRenderers.renderGlossary({
+        elements,
+        entries: glossaryTerms,
+        query: state.glossaryQuery
     });
-
-    elements.glossaryGrid.innerHTML = visibleEntries.map(buildGlossaryMarkup).join("");
-    elements.glossaryCount.textContent = `${visibleEntries.length} verbetes revelados`;
 };
 
 const renderFilters = () => {
@@ -681,47 +625,19 @@ const syncAuthorSelection = () => {
 };
 
 const syncAffinityChoices = () => {
-    elements.affinityQuestions.querySelectorAll(".affinity-choice").forEach((button) => {
-        const isSelected = state.affinityAnswers.get(button.dataset.questionId) === button.dataset.optionValue;
-        button.classList.toggle("is-selected", isSelected);
+    affinityRenderers.renderChoices({
+        elements,
+        answers: state.affinityAnswers,
+        questions: affinityQuestions
     });
-
-    elements.affinityProgress.textContent = `${state.affinityAnswers.size}/${affinityQuestions.length} respostas escolhidas`;
-};
-
-const renderAffinityMap = (scoreMap = new Map()) => {
-    const scores = readingPaths.map((path) => ({
-        ...path,
-        score: scoreMap.get(path.id) || 0
-    }));
-    const maxScore = Math.max(...scores.map((entry) => entry.score), 1);
-
-    elements.affinityMap.innerHTML = scores.map((entry) => {
-        const fill = entry.score > 0 ? `${Math.max(14, (entry.score / maxScore) * 100)}%` : "6%";
-
-        return `
-            <article class="affinity-lane">
-                <div class="affinity-lane-head">
-                    <strong>${escapeHtml(entry.name)}</strong>
-                    <span>${escapeHtml(entry.score)} pontos</span>
-                </div>
-                <div class="affinity-track">
-                    <div class="affinity-fill" style="--fill: ${fill}; --accent: ${escapeHtml(entry.accent)};"></div>
-                </div>
-            </article>
-        `;
-    }).join("");
 };
 
 const renderRecommendationHistory = () => {
-    elements.affinityHistory.innerHTML = state.recommendationHistory.length > 0
-        ? `<h4>Trilhas recentes</h4>${state.recommendationHistory.map((entry, index) => {
-            const path = readingPaths.find((item) => item.id === entry.pathId);
-            if (!path) return "";
-            const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(entry.savedAt);
-            return `<button class="affinity-history-button" type="button" data-recommendation-history="${index}">${escapeHtml(path.name)} <span>${escapeHtml(date)}</span></button>`;
-        }).join("")}`
-        : "";
+    affinityRenderers.renderHistory({
+        element: elements.affinityHistory,
+        history: state.recommendationHistory,
+        paths: readingPaths
+    });
 };
 
 const updatePurchasePanel = (bookInput) => {
@@ -805,14 +721,7 @@ const renderResults = () => {
 
 const renderAffinityRecommendation = () => {
     if (state.affinityAnswers.size < affinityQuestions.length) {
-        elements.affinityResult.dataset.state = "idle";
-        elements.affinityResultName.textContent = "Responda as quatro perguntas";
-        elements.affinityResultDescription.textContent = "O Or\u00E1culo de Afinidade vai sugerir uma trilha de leitura coerente com seu gosto.";
-        elements.affinityResultReason.textContent = "Escolha um portal, um ritmo, uma forma de magia e uma paisagem.";
-        elements.affinityResultAlt.textContent = "Se houver uma segunda trilha compativel, ela aparece aqui como caminho complementar.";
-        elements.affinityResultBooks.innerHTML = "";
-        elements.affinityExplore.disabled = true;
-        renderAffinityMap();
+        affinityRenderers.renderIdleResult({ elements, paths: readingPaths });
         return;
     }
 
@@ -839,19 +748,12 @@ const renderAffinityRecommendation = () => {
         .map((bookId) => getRegisteredBook(bookId))
         .filter(Boolean);
 
-    elements.affinityResult.dataset.state = "ready";
-    elements.affinityResultName.textContent = recommendation.bestPath.name;
-    elements.affinityResultDescription.textContent = recommendation.bestPath.description;
-    elements.affinityResultReason.textContent = recommendation.reason;
-    elements.affinityResultAlt.textContent = recommendation.runnerUp
-        ? `Se quiser um segundo caminho sem perder o clima principal, experimente tamb\u00E9m ${recommendation.runnerUp.name.toLowerCase()}.`
-        : "Esta leitura ficou bem definida; o Or\u00E1culo n\u00E3o encontrou uma segunda trilha t\u00E3o forte quanto a principal.";
-    elements.affinityResultBooks.innerHTML = recommendedBooks.map(buildAffinityBookMarkup).join("");
-    elements.affinityExplore.disabled = false;
-    elements.affinityExplore.dataset.query = recommendation.bestPath.focusQuery;
-    elements.affinityExplore.dataset.label = recommendation.bestPath.focusLabel;
-    elements.affinityExplore.textContent = `Explorar ${recommendation.bestPath.focusLabel}`;
-    renderAffinityMap(recommendation.scoreMap);
+    affinityRenderers.renderResult({
+        elements,
+        recommendation,
+        books: recommendedBooks,
+        paths: readingPaths
+    });
     setHeroGallery(recommendation.bestPath.id);
 };
 
