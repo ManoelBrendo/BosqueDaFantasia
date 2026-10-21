@@ -57,6 +57,7 @@ const startApi = async ({ adminEmail = bootstrapEmail, adminPassword = bootstrap
             NODE_ENV: "test",
             BOSQUE_API_HOST: "127.0.0.1",
             BOSQUE_API_PORT: String(port),
+            DATABASE_URL: "",
             BOSQUE_JWT_SECRET: jwtSecret,
             BOSQUE_BOOTSTRAP_ADMIN_EMAIL: adminEmail,
             BOSQUE_BOOTSTRAP_ADMIN_PASSWORD: adminPassword,
@@ -128,6 +129,7 @@ const productionSecretCheck = () => {
     const configUrl = pathToFileURL(path.join(projectRoot, "backend", "lib", "config.mjs")).href;
     const checkSecret = (secret) => {
         const env = { ...process.env, NODE_ENV: "production" };
+        env.DATABASE_URL = "postgres://bosque:test@127.0.0.1:5432/bosque_test";
         if (secret === null) delete env.BOSQUE_JWT_SECRET;
         else env.BOSQUE_JWT_SECRET = secret;
         return spawnSync(process.execPath, [
@@ -143,6 +145,36 @@ const productionSecretCheck = () => {
         assert.match(result.stderr, /BOSQUE_JWT_SECRET/);
     }
     assert.equal(checkSecret("x".repeat(32)).status, 0, "A API deve aceitar segredo JWT com 32 caracteres em producao.");
+
+    const missingDatabaseEnv = {
+        ...process.env,
+        NODE_ENV: "production",
+        BOSQUE_JWT_SECRET: "x".repeat(32)
+    };
+    delete missingDatabaseEnv.DATABASE_URL;
+    const missingDatabase = spawnSync(process.execPath, [
+        "--input-type=module",
+        "-e",
+        `import(${JSON.stringify(configUrl)})`
+    ], { cwd: projectRoot, env: missingDatabaseEnv, encoding: "utf8" });
+    assert.notEqual(missingDatabase.status, 0, "A API nao pode iniciar em producao usando JSON local.");
+    assert.match(missingDatabase.stderr, /DATABASE_URL/);
+
+    const railwayConfigEnv = {
+        ...process.env,
+        NODE_ENV: "production",
+        BOSQUE_JWT_SECRET: "x".repeat(32),
+        DATABASE_URL: "postgres://bosque:test@127.0.0.1:5432/bosque_test",
+        PORT: "4199",
+        BOSQUE_API_PORT: "4180"
+    };
+    const railwayConfig = spawnSync(process.execPath, [
+        "--input-type=module",
+        "-e",
+        `import(${JSON.stringify(configUrl)}).then(({config}) => console.log(JSON.stringify({host: config.host, port: config.port})))`
+    ], { cwd: projectRoot, env: railwayConfigEnv, encoding: "utf8" });
+    assert.equal(railwayConfig.status, 0);
+    assert.deepEqual(JSON.parse(railwayConfig.stdout.trim()), { host: "0.0.0.0", port: 4199 });
 };
 
 try {
@@ -206,6 +238,32 @@ try {
     assert.equal((await (await getJson(api.base, "/api/me", readerSession.token)).json()).user.role, "reader");
     assert.equal((await getJson(api.base, adminRoute, readerSession.token)).status, 403);
 
+    const upload = await postJson(api.base, "/api/files", {
+        name: "../nota.txt",
+        type: "text/plain",
+        contentBase64: Buffer.from("arquivo de teste").toString("base64")
+    }, readerSession.token);
+    assert.equal(upload.status, 201);
+    const uploadedFile = (await upload.json()).file;
+    const listedFiles = await getJson(api.base, "/api/files", readerSession.token);
+    assert.equal((await listedFiles.json()).files[0].id, uploadedFile.id);
+    const downloadedFile = await getJson(api.base, `/api/files/${uploadedFile.id}`, readerSession.token);
+    assert.equal((await downloadedFile.json()).file.contentBase64, Buffer.from("arquivo de teste").toString("base64"));
+
+    const duplicateRegistrations = await Promise.all([
+        postJson(api.base, "/api/auth/register", {
+            name: "Conta concorrente A",
+            email: "concurrent@bosque.test",
+            password: "reader-password"
+        }),
+        postJson(api.base, "/api/auth/register", {
+            name: "Conta concorrente B",
+            email: "concurrent@bosque.test",
+            password: "reader-password"
+        })
+    ]);
+    assert.deepEqual(duplicateRegistrations.map((response) => response.status).sort(), [201, 409]);
+
     const adminLogin = await postJson(api.base, "/api/auth/login", {
         email: bootstrapEmail,
         password: bootstrapPassword
@@ -214,6 +272,7 @@ try {
     const adminSession = await adminLogin.json();
     assert.equal(adminSession.user.role, "admin");
     assert.equal((await getJson(api.base, adminRoute, adminSession.token)).status, 404);
+    assert.equal((await getJson(api.base, `/api/files/${uploadedFile.id}`, adminSession.token)).status, 404);
 
     const databasePath = path.join(tempRoot, "backend", "data", "bosque-db.json");
     let database = JSON.parse(await readFile(databasePath, "utf8"));
@@ -222,7 +281,7 @@ try {
     assert.equal(registeredReader.role, "reader");
     assert.equal(registeredReader.disabled, false);
 
-    for (let attempt = 0; attempt < 6; attempt += 1) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
         const invalidLogin = await postJson(api.base, "/api/auth/login", {
             email: "unknown@bosque.test",
             password: "incorrect-password"
@@ -262,7 +321,15 @@ try {
         /Ja existe administrador/
     );
 
-    console.log("OK: auth roles, bootstrap, token validation, account migration, rate limits and production secret.");
+    const corruptDatabase = "{invalid json";
+    await writeFile(databasePath, corruptDatabase, "utf8");
+    await assert.rejects(
+        startApi(),
+        /Nao foi possivel ler o banco local/
+    );
+    assert.equal(await readFile(databasePath, "utf8"), corruptDatabase, "O banco invalido deve ser preservado para recuperacao.");
+
+    console.log("OK: auth roles, bootstrap, token validation, account migration, file access, concurrent registration, data preservation, rate limits and Railway production config.");
 } finally {
     for (const api of runningApis) await api.stop();
     await rm(tempRoot, { recursive: true, force: true });

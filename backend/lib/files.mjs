@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { config } from "./config.mjs";
-import { readCollection, writeCollection } from "./json-store.mjs";
+import { readCollection, readFileFromPostgres, saveFileInPostgres, updateCollection } from "./json-store.mjs";
 
 const safeFileName = (name) => {
     return String(name || "arquivo")
@@ -24,10 +24,7 @@ export const saveUserFile = async (user, payload) => {
     const id = crypto.randomUUID();
     const originalName = safeFileName(payload.name);
     const storedName = `${id}-${originalName}`;
-    await mkdir(config.uploadDir, { recursive: true });
-    await writeFile(path.join(config.uploadDir, storedName), buffer);
 
-    const files = await readCollection("files");
     const file = {
         id,
         userId: user.id,
@@ -38,8 +35,13 @@ export const saveUserFile = async (user, payload) => {
         createdAt: new Date().toISOString()
     };
 
-    files.push(file);
-    await writeCollection("files", files);
+    if (config.databaseUrl) {
+        await saveFileInPostgres(file, buffer);
+    } else {
+        await mkdir(config.uploadDir, { recursive: true });
+        await writeFile(path.join(config.uploadDir, storedName), buffer);
+        await updateCollection("files", (files) => [...files, file]);
+    }
     return file;
 };
 
@@ -56,7 +58,12 @@ export const readUserFile = async (user, fileId) => {
         throw Object.assign(new Error("Arquivo nao encontrado."), { status: 404 });
     }
 
-    const content = await readFile(path.join(config.uploadDir, file.storedName));
+    const content = config.databaseUrl
+        ? await readFileFromPostgres(file.id)
+        : await readFile(path.join(config.uploadDir, file.storedName));
+    if (!content) {
+        throw new Error(`O conteudo do arquivo ${file.id} nao foi encontrado no armazenamento.`);
+    }
     return {
         ...file,
         contentBase64: content.toString("base64")

@@ -20,11 +20,30 @@ O espaco `/api/admin/*` exige sessao remota com papel `admin`; como ainda nao ha
 
 O teste de integracao isolado da autenticacao roda com `npm test`; ele cria seu banco temporario e nao altera `backend/data/bosque-db.json`.
 
-## Banco de dados local
+## Armazenamento local e PostgreSQL
 
-As contas e os registros de arquivos ficam em `backend/data/bosque-db.json`.
-O arquivo usa colecoes separadas para `users` e `files`, mantendo os dados em um unico banco local.
+Sem `DATABASE_URL`, o desenvolvimento local continua usando `backend/data/bosque-db.json` e `backend/uploads`. Esse armazenamento e apenas para desenvolvimento/testes em uma instancia.
+
+Em producao, `DATABASE_URL` e obrigatoria. O backend cria/atualiza o schema PostgreSQL por migracoes versionadas na inicializacao. As colecoes de usuarios, arquivos e bibliotecas usam JSONB transacional com bloqueio da linha da colecao durante atualizacoes; conteudos de arquivos ficam em `BYTEA`, separados dos metadados. Arquivos continuam limitados a 4 MB.
+
+Para importar o armazenamento legado para um banco PostgreSQL vazio:
+
+1. Configure `DATABASE_URL` e garanta que o banco de destino esta acessivel.
+2. Preserve uma copia de seguranca de `backend/data/bosque-db.json` e `backend/uploads`.
+3. Execute `npm run migrate:postgres` a partir da raiz do projeto. O comando importa usuarios, metadados e conteudo dos arquivos em uma unica transacao, nao altera os arquivos de origem e interrompe se faltar conteudo ou se o destino ja tiver dados.
+4. Repita o comando para confirmar que a importacao e idempotente; valide login, papeis, listagem e leitura de arquivos antes de apontar usuarios para a API.
+
+O ID de importacao `legacy-json-v1` fica registrado no banco. Se a origem mudar apos a primeira importacao, o comando falha de forma explicita em vez de sobrescrever dados.
+
+As migracoes criam tabelas de colecao, registro de importacao e blobs de arquivos. O modelo atual mantem as colecoes em JSONB para preservar a API interna existente; se o volume crescer, normalizar usuarios, arquivos e bibliotecas em tabelas relacionais deve ser uma etapa propria.
+
+O PostgreSQL garante transacoes e concorrencia entre processos, mas backup e recuperacao ainda precisam ser ativados e testados no provedor. Nao considere o deploy pronto antes de executar e documentar uma restauracao isolada.
+
+No modo local, o arquivo usa colecoes separadas para `users` e `files`, mantendo os dados em um unico banco JSON.
 Para zerar as contas criadas, deixe `users` como uma lista vazia.
+Atualizacoes de colecoes sao serializadas dentro de um processo, e a gravacao usa arquivo temporario seguido de substituicao atomica. JSON invalido ou colecoes corrompidas interrompem a inicializacao sem recriar o arquivo vazio; restaure um backup antes de reiniciar.
+
+Esse armazenamento local nao oferece transacoes entre processos, multiplas instancias, backup automatico ou recuperacao ponto a ponto. Nunca use o JSON local como persistencia de producao.
 
 ## Rodar
 
@@ -37,6 +56,19 @@ Servidor:
 ```text
 http://127.0.0.1:4180
 ```
+
+## Deploy sugerido no Railway
+
+O frontend pode continuar no GitHub Pages com dominio proprio; a API Node e o PostgreSQL ficam em servicos separados no mesmo projeto Railway.
+
+1. Configure o servico Node com comando `npm run api` e a raiz do repositorio.
+2. Adicione PostgreSQL ao projeto e defina `DATABASE_URL` usando a referencia privada fornecida pelo Railway.
+3. Configure `BOSQUE_JWT_SECRET` com pelo menos 32 caracteres aleatorios, `BOSQUE_CORS_ORIGIN` com a origem HTTPS exata do frontend e as variaveis de bootstrap do primeiro admin somente durante o provisionamento.
+4. A API usa `PORT` automaticamente e escuta em `0.0.0.0` em producao.
+5. Execute a importacao do legado uma unica vez, de um ambiente confiavel com acesso ao banco e aos arquivos locais, usando `npm run migrate:postgres`.
+6. Ative backups no PostgreSQL e teste a restauracao antes de usar contas reais. Nao publique nem solicite credenciais no codigo-fonte ou nesta documentacao.
+
+O repositorio nao esta conectado nem implantado no Railway. Sao necessarios projeto, banco e DNS configurados para validar conectividade, backup, restore e deploy real.
 
 ## Frontend com API centralizada
 

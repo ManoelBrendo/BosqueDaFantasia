@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { readCollection, writeCollection } from "./json-store.mjs";
+import { readCollection, updateCollection } from "./json-store.mjs";
 import { config } from "./config.mjs";
 
 const hashPassword = (password, salt = crypto.randomBytes(16).toString("hex")) => {
@@ -99,14 +99,15 @@ export const getAuthUser = async (request) => {
 };
 
 export const migrateUserRoles = async () => {
-    const users = await readCollection("users");
-    let changed = false;
-    const migrated = users.map((user) => {
-        if (user.role === "reader" || user.role === "admin") return user;
-        changed = true;
-        return { ...user, role: "reader" };
+    await updateCollection("users", (users) => {
+        let changed = false;
+        const migrated = users.map((user) => {
+            if (user.role === "reader" || user.role === "admin") return user;
+            changed = true;
+            return { ...user, role: "reader" };
+        });
+        return changed ? migrated : users;
     });
-    if (changed) await writeCollection("users", migrated);
 };
 
 export const provisionAdmin = async (payload) => {
@@ -115,23 +116,30 @@ export const provisionAdmin = async (payload) => {
     if (!isValidEmail(normalizedEmail) || typeof password !== "string" || password.length < 12 || password.length > 1024) {
         throw new Error("Provisionamento admin exige email valido e senha com pelo menos 12 caracteres.");
     }
-    const users = await readCollection("users");
-    const existingAdmins = users.filter((user) => user.role === "admin");
-    if (existingAdmins.length) {
-        const existing = users.find((user) => user.email === normalizedEmail);
-        if (existing?.role === "admin") return { created: false, alreadyProvisioned: true };
-        throw new Error("Ja existe administrador. O provisionamento inicial nao altera contas existentes.");
-    }
-    const existing = users.find((user) => user.email === normalizedEmail);
-    if (existing) throw new Error("O email informado ja pertence a uma conta comum; provisionamento nao promove contas automaticamente.");
     const user = {
         id: crypto.randomUUID(), email: normalizedEmail,
         name: "Administrador do Bosque", role: "admin", disabled: false,
         passwordHash: hashPassword(password), createdAt: new Date().toISOString()
     };
-    users.push(user);
-    await writeCollection("users", users);
-    return { created: true, user };
+    let result;
+    await updateCollection("users", (users) => {
+        const existingAdmins = users.filter((entry) => entry.role === "admin");
+        if (existingAdmins.length) {
+            const existing = users.find((entry) => entry.email === normalizedEmail);
+            if (existing?.role === "admin") {
+                result = { created: false, alreadyProvisioned: true };
+                return users;
+            }
+            throw new Error("Ja existe administrador. O provisionamento inicial nao altera contas existentes.");
+        }
+        const existing = users.find((entry) => entry.email === normalizedEmail);
+        if (existing) {
+            throw new Error("O email informado ja pertence a uma conta comum; provisionamento nao promove contas automaticamente.");
+        }
+        result = { created: true, user };
+        return [...users, user];
+    });
+    return result;
 };
 
 export const registerUser = async (payload) => {
@@ -149,12 +157,6 @@ export const registerUser = async (payload) => {
         throw Object.assign(new Error("Informe e-mail valido e senha com pelo menos 6 caracteres."), { status: 400 });
     }
 
-    const users = await readCollection("users");
-
-    if (users.some((user) => user.email === normalizedEmail)) {
-        throw Object.assign(new Error("Este e-mail ja esta cadastrado."), { status: 409 });
-    }
-
     const user = {
         id: crypto.randomUUID(),
         email: normalizedEmail,
@@ -165,8 +167,12 @@ export const registerUser = async (payload) => {
         createdAt: new Date().toISOString()
     };
 
-    users.push(user);
-    await writeCollection("users", users);
+    await updateCollection("users", (users) => {
+        if (users.some((entry) => entry.email === normalizedEmail)) {
+            throw Object.assign(new Error("Este e-mail ja esta cadastrado."), { status: 409 });
+        }
+        return [...users, user];
+    });
     return user;
 };
 

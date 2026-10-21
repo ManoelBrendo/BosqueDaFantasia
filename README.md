@@ -32,6 +32,7 @@ Se o terminal ainda nao reconhecer `node` ou `npm`, feche e abra o terminal nova
 - `app.js`: orquestracao principal da experiencia, filtros, glossario, autores, afinidade e fichas.
 - `catalog-api.js`: API da aplicacao para consulta ao acervo, com fallback para o banco local.
 - `library-db.js`: banco local em IndexedDB para consultas e dados essenciais.
+- `backend/lib/postgres-store.mjs`: armazenamento transacional PostgreSQL opcional para producao; o modo local continua em JSON.
 - `open-library-api.js`: cliente de rede da Open Library com enriquecimento editorial.
 - `site-data.js`: ponto de compatibilidade que reexporta os dados editoriais por dominio.
 - `data/books.js`, `data/authors.js`, `data/glossary.js`, `data/themes.js`: dados editoriais separados; registros com status `rascunho` e `revisado` nao aparecem na interface publica.
@@ -49,6 +50,7 @@ Se o terminal ainda nao reconhecer `node` ou `npm`, feche e abra o terminal nova
 - `scripts/build.mjs`: geracao de `dist` para entrega e deploy.
 - `docs/REQUISITOS-FUNCIONALIDADES.md`: levantamento de requisitos, funcionalidades e criterios de aceite.
 - `docs/PLANO-MELHORIAS-W.md`: plano de melhorias visuais, arquiteturais e de infraestrutura com metodo em W.
+- `docs/LEVANTAMENTO-MELHORIAS-ALTO-IMPACTO.md`: oportunidades priorizadas para evoluir conta, persistencia, curadoria e qualidade.
 - `docs/DEPLOY-RUNBOOK.md`: checklist de deploy, ambientes e rollback.
 
 ## O que o projeto entrega
@@ -68,8 +70,8 @@ Se o terminal ainda nao reconhecer `node` ou `npm`, feche e abra o terminal nova
 
 ## Observacoes
 
-- O projeto continua sem build e sem dependencias de instalacao.
+- O frontend continua sem framework ou etapa de compilacao; o backend usa o pacote `pg` para conectar ao PostgreSQL.
 - O modo offline completo funciona quando o site esta publicado em HTTPS, como no GitHub Pages.
-- O login usa modo local no navegador por padrao e nao precisa de API rodando. Para contas centralizadas, publique o backend e configure a origem publica em `site-config.js`.
+- O login usa modo local no navegador por padrao e nao precisa de API rodando. Para contas centralizadas, publique o backend e configure a origem publica em `site-config.js`. Em producao, configure `DATABASE_URL`; consulte `backend/README.md` para importar dados locais com seguranca.
 - A trilha ambiente usa audios abertos do Wikimedia Commons com fontes MP3/OGG, player customizado, controle de volume e opcoes de faixa.
 - O audio ambiente e algumas imagens dependem de fontes externas na primeira visita, mas passam a se beneficiar do cache offline depois de acessados.

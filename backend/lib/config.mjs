@@ -9,16 +9,22 @@ if (process.env.NODE_ENV === "production" && (jwtSecret === "dev-change-this-sec
     throw new Error("BOSQUE_JWT_SECRET precisa ter pelo menos 32 caracteres em producao.");
 }
 
+if (process.env.NODE_ENV === "production" && !process.env.DATABASE_URL) {
+    throw new Error("DATABASE_URL e obrigatoria em producao; o armazenamento JSON local nao e seguro para deploy.");
+}
+
 const bootstrapAdminEmail = String(process.env.BOSQUE_BOOTSTRAP_ADMIN_EMAIL || "").trim().toLowerCase();
 const bootstrapAdminPassword = process.env.BOSQUE_BOOTSTRAP_ADMIN_PASSWORD || "";
 
 export const config = {
-    host: process.env.BOSQUE_API_HOST || "127.0.0.1",
-    port: Number(process.env.BOSQUE_API_PORT || 4180),
+    host: process.env.BOSQUE_API_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1"),
+    port: Number(process.env.PORT || process.env.BOSQUE_API_PORT || 4180),
     jwtSecret,
     bootstrapAdminEmail,
     bootstrapAdminPassword,
+    databaseUrl: process.env.DATABASE_URL || "",
     corsOrigin: process.env.BOSQUE_CORS_ORIGIN || "http://127.0.0.1:4173",
+    backendRoot,
     projectRoot,
     publicRoot: projectRoot,
     dataDir: path.join(backendRoot, "data"),

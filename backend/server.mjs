@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { config } from "./lib/config.mjs";
+import { initializeStore } from "./lib/json-store.mjs";
 import { getAuthUser, loginUser, publicUser, registerUser, createToken, migrateUserRoles, provisionAdmin } from "./lib/auth.mjs";
 import { readJsonBody, sendJson, serveStatic } from "./lib/http-utils.mjs";
 import { listUserFiles, readUserFile, saveUserFile } from "./lib/files.mjs";
@@ -145,6 +146,7 @@ const server = createServer((request, response) => {
 });
 
 const start = async () => {
+    await initializeStore();
     await migrateUserRoles();
     if (config.bootstrapAdminEmail || config.bootstrapAdminPassword) {
         if (!config.bootstrapAdminEmail || !config.bootstrapAdminPassword) {
