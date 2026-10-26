@@ -35,7 +35,7 @@ const waitForServer = async () => {
 
 try {
     await waitForServer();
-    for (const script of ["test-browser.mjs", "test-accessibility.mjs"]) {
+    for (const script of ["test-browser.mjs", "test-accessibility.mjs", "test-pwa.mjs"]) {
         const result = spawnSync(process.execPath, [
             path.join(projectRoot, "scripts", script)
         ], {

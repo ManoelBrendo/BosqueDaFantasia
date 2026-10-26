@@ -1,5 +1,5 @@
-const SHELL_CACHE = "bosque-shell-v24";
-const RUNTIME_CACHE = "bosque-runtime-v24";
+const SHELL_CACHE = "bosque-shell-v25";
+const RUNTIME_CACHE = "bosque-runtime-v25";
 const APP_SHELL = [
     "./site-config.js",
     "./assets/forest-fallback.svg",
@@ -97,8 +97,13 @@ self.addEventListener("install", (event) => {
     event.waitUntil(
         caches.open(SHELL_CACHE)
             .then((cache) => cache.addAll(APP_SHELL))
-            .then(() => self.skipWaiting())
     );
+});
+
+self.addEventListener("message", (event) => {
+    if (event.data?.type === "SKIP_WAITING") {
+        self.skipWaiting();
+    }
 });
 
 self.addEventListener("activate", (event) => {

@@ -14,7 +14,11 @@ const setStatus = (element, text, tone = "idle") => {
 export const initPwaFeatures = () => {
     const statusElement = document.getElementById("pwa-status");
     const installButton = document.getElementById("install-app");
+    const updateNotice = document.getElementById("pwa-update-notice");
+    const updateButton = document.getElementById("update-app");
     let deferredPrompt = null;
+    let updateAccepted = false;
+    let refreshing = false;
 
     const syncConnectionStatus = () => {
         if (!navigator.onLine) {
@@ -75,6 +79,48 @@ export const initPwaFeatures = () => {
     window.addEventListener("load", async () => {
         try {
             const registration = await navigator.serviceWorker.register("./sw.js", { scope: "./" });
+            const showUpdateNotice = () => {
+                if (!registration.waiting || !navigator.serviceWorker.controller || !updateNotice || !updateButton) {
+                    return;
+                }
+
+                updateNotice.hidden = false;
+            };
+
+            registration.addEventListener("updatefound", () => {
+                const installingWorker = registration.installing;
+                if (!installingWorker) {
+                    return;
+                }
+
+                installingWorker.addEventListener("statechange", () => {
+                    if (installingWorker.state === "installed") {
+                        showUpdateNotice();
+                    }
+                });
+            });
+
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+                if (!updateAccepted || refreshing) {
+                    return;
+                }
+
+                refreshing = true;
+                window.location.reload();
+            });
+
+            updateButton?.addEventListener("click", () => {
+                if (!registration.waiting) {
+                    return;
+                }
+
+                updateButton.disabled = true;
+                updateButton.textContent = "Atualizando…";
+                updateAccepted = true;
+                registration.waiting.postMessage({ type: "SKIP_WAITING" });
+            });
+
+            showUpdateNotice();
 
             if (registration.active || registration.waiting || registration.installing) {
                 setStatus(statusElement, navigator.onLine
