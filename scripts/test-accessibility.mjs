@@ -26,7 +26,14 @@ try {
   assert.notEqual(await page.locator('body').evaluate(element=>getComputedStyle(element).cursor),'none');
   assert.equal(await page.locator('.magic-cursor').count(),0);
   if(file==='index.html') {
-   assert.equal(await page.locator('link[href*="aos"],script[src*="aos"],link[href*="animate.css"],[data-aos],.animate__animated').count(),0);
+   assert.equal(await page.locator('link[href*="aos"],script[src*="aos"],link[href*="animate.css"],[data-aos],.animate__animated,script[src*="anime"],script[src*="gsap"],link[href*="cdnjs.cloudflare"],link[href*="cdn.jsdelivr.net"]').count(),0);
+   assert.equal(await page.locator('#ambient-audio').getAttribute('preload'),'none');
+   const audioRequests=[];
+   page.on('request',request=>{
+    if(request.url().includes('O_frondens_2.ogg')) audioRequests.push(request.url());
+   });
+   await page.waitForTimeout(300);
+   assert.deepEqual(audioRequests,[],'ambient audio should wait until the reader presses play');
   }
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(()=>document.activeElement.className),'skip-link');

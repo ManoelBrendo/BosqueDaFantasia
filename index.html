@@ -19,8 +19,6 @@
     <link rel="preconnect" href="https://openlibrary.org">
     <link rel="preconnect" href="https://covers.openlibrary.org">
     <link rel="preconnect" href="https://upload.wikimedia.org" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="icon" href="./bosque-icon.svg" type="image/svg+xml">
     <link rel="modulepreload" href="./app.js?v=portuguese-titles-v1">
@@ -3134,37 +3132,8 @@
     </div>
 
     <button id="ambient-dock" class="ambient-dock" type="button" aria-pressed="false">Trilha sonora</button>
-    <audio id="ambient-audio" loop preload="metadata" crossorigin="anonymous" playsinline>
-        <source src="https://upload.wikimedia.org/wikipedia/commons/transcoded/a/ad/O_frondens_2.ogg/O_frondens_2.ogg.mp3" type="audio/mpeg">
-        <source src="https://upload.wikimedia.org/wikipedia/commons/a/ad/O_frondens_2.ogg" type="audio/ogg">
-    </audio>
+    <audio id="ambient-audio" loop preload="none" crossorigin="anonymous" playsinline></audio>
 
-    <script>
-        const leanMotion = window.matchMedia("(max-width: 780px), (pointer: coarse), (prefers-reduced-motion: reduce)").matches;
-
-        const loadMotionLibrary = (src) => {
-            const script = document.createElement("script");
-            script.src = src;
-            script.async = true;
-            document.head.append(script);
-            return script;
-        };
-
-        if (!leanMotion) {
-            loadMotionLibrary("https://cdn.jsdelivr.net/npm/animejs@3.2.2/lib/anime.min.js");
-            const gsapScript = loadMotionLibrary("https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js");
-            gsapScript.addEventListener("load", () => {
-                if (window.gsap) {
-                    window.gsap.from(".topbar", {
-                        y: -18,
-                        opacity: 0,
-                        duration: 0.72,
-                        ease: "power3.out"
-                    });
-                }
-            }, { once: true });
-        }
-    </script>
     <script type="module" src="./fantasy-effects.js"></script>
     <script type="module" src="./account-panel.js?v=account-connectivity-v1"></script>
     <script type="module">

@@ -777,40 +777,6 @@ const getFavoriteTitles = ({ favorites, books }) => {
         .slice(0, 4);
 };
 
-const animateAccountEntrance = (widget) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !window.gsap || widget.dataset.animated === "true") {
-        return;
-    }
-
-    widget.dataset.animated = "true";
-    window.gsap.fromTo(widget, {
-        opacity: 0,
-        y: -8,
-        scale: 0.96
-    }, {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.46,
-        ease: "back.out(1.6)"
-    });
-};
-
-const animateAccountPanel = (widget) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !window.anime) {
-        return;
-    }
-
-    window.anime({
-        targets: widget.querySelectorAll(".account-mini-card, .account-section, .account-actions"),
-        translateY: [8, 0],
-        opacity: [0, 1],
-        delay: window.anime.stagger(38),
-        duration: 420,
-        easing: "easeOutCubic"
-    });
-};
-
 const ensureAccountWidget = () => {
     let widget = document.getElementById("account-widget");
 
@@ -844,10 +810,6 @@ const ensureAccountWidget = () => {
         const isOpen = widget.classList.toggle("is-open");
         widget.querySelector("#account-panel").inert = !isOpen;
         widget.querySelector("#account-trigger")?.setAttribute("aria-expanded", String(isOpen));
-
-        if (isOpen) {
-            animateAccountPanel(widget);
-        }
     });
 
     document.addEventListener("click", (event) => {
@@ -897,7 +859,6 @@ const renderAccountWidget = async (user, { refresh = false } = {}) => {
     const sessionMode = getSessionModeLabel(activeUser);
 
     widget.classList.add("is-ready");
-    animateAccountEntrance(widget);
     widget.querySelector("#account-trigger-avatar").textContent = getInitials(activeUser.name);
     widget.querySelector("#account-trigger-name").textContent = getCompactName(nickname);
     widget.querySelector("#account-trigger-name").title = nickname;
