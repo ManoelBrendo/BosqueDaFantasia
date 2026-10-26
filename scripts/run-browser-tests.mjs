@@ -35,9 +35,15 @@ const waitForServer = async () => {
 
 try {
     await waitForServer();
-    for (const script of ["test-browser.mjs", "test-accessibility.mjs", "test-pwa.mjs"]) {
+    const visualOnly = process.argv.includes("--visual-only");
+    const scripts = visualOnly
+        ? ["test-visual.mjs"]
+        : ["test-browser.mjs", "test-accessibility.mjs", "test-pwa.mjs", "test-visual.mjs"];
+    const forwardedArguments = process.argv.includes("--update") ? ["--update"] : [];
+    for (const script of scripts) {
         const result = spawnSync(process.execPath, [
-            path.join(projectRoot, "scripts", script)
+            path.join(projectRoot, "scripts", script),
+            ...forwardedArguments
         ], {
             cwd: projectRoot,
             env: process.env,

@@ -53,6 +53,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: browser-test-screenshots
-          path: artifacts/qa/
+          path: |
+            artifacts/qa/
+            artifacts/visual-regressions/
           if-no-files-found: ignore
           retention-days: 7
