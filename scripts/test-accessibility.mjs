@@ -23,6 +23,11 @@ try {
   await page.setViewportSize({width:390,height:844});
   await page.goto('http://127.0.0.1:4173/'+file);
   assert.equal(await page.locator('main').count(),1);
+  assert.notEqual(await page.locator('body').evaluate(element=>getComputedStyle(element).cursor),'none');
+  assert.equal(await page.locator('.magic-cursor').count(),0);
+  if(file==='index.html') {
+   assert.equal(await page.locator('link[href*="aos"],script[src*="aos"],link[href*="animate.css"],[data-aos],.animate__animated').count(),0);
+  }
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(()=>document.activeElement.className),'skip-link');
   await page.keyboard.press('Enter');

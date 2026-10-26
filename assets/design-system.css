@@ -12,99 +12,6 @@
 }
 body[class^="page-"] { margin: 0; color: var(--text); background: radial-gradient(ellipse at 90% 0, #27473655, transparent 42rem), var(--bg); font: 400 16px/1.65 var(--font-body); overflow-x: visible; }
 body::before, body::after { display: none !important; }
-@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  body { cursor: none; }
-  :where(a, button, input, select, textarea, summary, [role="button"], .site-menu-toggle, .button, .text-link, .topic-card) { cursor: none; }
-  .magic-cursor {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 30px;
-    height: 30px;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    z-index: 2000;
-    transform: translate3d(var(--cursor-x, 0px), var(--cursor-y, 0px), 0) translate(-50%, -50%) scale(var(--cursor-scale, 1));
-    opacity: 0;
-    transition: opacity .18s ease, filter .22s ease;
-    filter: drop-shadow(0 0 7px rgba(234, 205, 120, 0.55));
-    will-change: transform;
-  }
-  .magic-cursor::before {
-    content: "";
-    position: absolute;
-    inset: 1px;
-    border: 1px solid rgba(242, 219, 175, 0.48);
-    border-right-color: transparent;
-    border-radius: 50%;
-    animation: cursor-orbit 8s linear infinite;
-  }
-  .magic-cursor::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 2px;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #fff2c2;
-    box-shadow: 0 0 8px 2px rgba(255, 230, 159, 0.72);
-    animation: cursor-spark 2.8s ease-in-out infinite;
-  }
-  .magic-cursor svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-    overflow: visible;
-    position: relative;
-    z-index: 1;
-    animation: cursor-float 3.6s ease-in-out infinite;
-  }
-  .magic-cursor .cursor-glow {
-    fill: rgba(255, 221, 133, 0.24);
-    filter: drop-shadow(0 0 4px rgba(255, 218, 128, 0.6));
-  }
-  .magic-cursor .cursor-stroke {
-    stroke: #fff0c4;
-    stroke-width: 1.8;
-    fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .magic-cursor .cursor-fill {
-    fill: rgba(15, 34, 26, 0.86);
-    stroke: rgba(255, 243, 194, 0.96);
-    stroke-width: 1.2;
-  }
-  body.cursor-enabled .magic-cursor {
-    opacity: 1;
-  }
-  body.cursor-hover .magic-cursor {
-    --cursor-scale: 1.22;
-    filter: drop-shadow(0 0 11px rgba(255, 220, 139, 0.82));
-  }
-  body.cursor-pressed .magic-cursor {
-    --cursor-scale: 0.9;
-  }
-  @keyframes cursor-orbit {
-    to { transform: rotate(360deg); }
-  }
-  @keyframes cursor-spark {
-    0%, 100% { opacity: .55; transform: scale(.8); }
-    50% { opacity: 1; transform: scale(1.25); }
-  }
-  @keyframes cursor-float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-1px); }
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  @media (pointer: fine) {
-    body { cursor: auto; }
-    .magic-cursor { display: none; }
-  }
-}
 h1, h2, h3 { font-family: var(--font-heading); }
 p { color: var(--muted); }
 a { color: inherit; }
@@ -283,7 +190,7 @@ body .fx-cursor-wisp, body .fx-realm-compass { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
  html { scroll-behavior: auto !important; }
  *, *::before, *::after { animation: none !important; transition: none !important; }
- [data-aos], body .fx-reveal { opacity: 1 !important; transform: none !important; }
+ body .fx-reveal { opacity: 1 !important; transform: none !important; }
 }
 @media (forced-colors: active) {
  .button, input, select, .book-card, .site-menu-toggle { border: 1px solid ButtonText !important; }
