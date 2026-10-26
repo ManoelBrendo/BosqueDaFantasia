@@ -36,6 +36,8 @@ page.on('pageerror',error=>errors.push(error.message));
 try {
  await page.goto('http://127.0.0.1:4173/livros.html?q=o+hobbit');
  await page.locator('.book-card').first().waitFor();
+ await page.waitForFunction(()=>document.querySelector('.book-card img')?.src.includes('forest-fallback.svg'));
+ assert.match(await page.locator('.book-card img').first().getAttribute('alt'),/Capa indisponível para/);
  assert.ok(calls[0].searchParams.get('q').includes('The Hobbit'));
  assert.equal(await page.locator('.book-copy h3').first().textContent(),'Zebra Volume');
  await page.locator('#catalog-load-more').click();
@@ -47,6 +49,8 @@ try {
  await page.locator('.book-link').first().click();
  await page.waitForURL('**/compra.html?**');
  assert.equal(await page.locator('#purchase-title').textContent(),'Alpha Volume');
+ await page.waitForFunction(()=>document.querySelector('#purchase-cover')?.src.includes('forest-fallback.svg'));
+ assert.match(await page.locator('#purchase-cover').getAttribute('alt'),/Capa indisponível para Alpha Volume/);
  await page.locator('#purchase-back').click();
  await page.locator('.book-card').first().waitFor();
  assert.equal(await page.locator('.book-card').count(),3);
@@ -60,8 +64,29 @@ try {
  await page.waitForFunction(()=>document.querySelector('#results-grid').getAttribute('aria-busy')==='false');
  assert.ok(calls.at(-1).searchParams.get('q').includes('author:"Tolkien"'));
  assert.ok(calls.at(-1).searchParams.get('q').includes('first_publish_year:[1900 TO 2000]'));
+ assert.equal(await page.locator('#active-filters .filter-chip').count(),4);
+ const authorChip=page.getByRole('button',{name:'Remover filtro: Autor: Tolkien'});
+ await authorChip.focus();await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>document.querySelector('#results-grid').getAttribute('aria-busy')==='false');
+ await page.waitForFunction(()=>document.activeElement.textContent.includes('A partir de: 1900'));
+ assert.equal(new URL(page.url()).searchParams.has('autor'),false);
+ assert.equal(new URL(page.url()).searchParams.get('de'),'1900');
+ assert.equal(new URL(page.url()).searchParams.get('ate'),'2000');
+ assert.equal(new URL(page.url()).searchParams.get('dominio'),'1');
+ assert.equal(await page.locator('#catalog-author').inputValue(),'');
  await page.locator('#catalog-search').fill('empty');await page.locator('#catalog-submit').click();
  await page.locator('.catalog-empty').waitFor();
+ assert.equal(await page.locator('.empty-clear-filters').count(),1);
+ await page.locator('.empty-clear-filters').focus();await page.keyboard.press('Enter');
+ await page.waitForFunction(()=>document.querySelector('#results-grid').getAttribute('aria-busy')==='false');
+ assert.equal(await page.evaluate(()=>document.activeElement.id),'catalog-search');
+ assert.equal(await page.locator('#active-filters .filter-chip').count(),0);
+ assert.equal(await page.locator('#catalog-search').inputValue(),'empty');
+ assert.equal(await page.locator('.empty-topic').count(),3);
+ await page.locator('.empty-topic').first().click();
+ await page.waitForFunction(()=>document.querySelector('#results-grid').getAttribute('aria-busy')==='false');
+ assert.ok(new URL(page.url()).searchParams.get('q').includes('subject:fantasy'));
+ assert.ok(await page.locator('.book-card').count()>0);
  await page.locator('#catalog-search').fill('failure');await page.locator('#catalog-submit').click();
  await page.locator('#catalog-retry').waitFor({state:'visible'});
  await page.locator('#catalog-search').fill('slow');await page.locator('#catalog-submit').click();
@@ -99,6 +124,25 @@ try {
  assert.equal(await offlineSessionPage.locator('body').evaluate(body=>body.classList.contains('auth-locked')),false);
  assert.equal(await offlineSessionPage.evaluate(()=>localStorage.getItem('bosque-api-token')),'remote-token');
  assert.equal(await offlineSessionPage.locator('.account-mode-badge').textContent(),'Conta no servidor');
+ const featuredCover=offlineSessionPage.locator('[data-book-cover-id]').first();
+ await featuredCover.waitFor();
+ await featuredCover.evaluate(image=>{image.loading='eager';image.scrollIntoView();});
+ await offlineSessionPage.waitForFunction(()=>document.querySelector('[data-book-cover-id]')?.src.includes('forest-fallback.svg'));
+ await offlineSessionPage.locator('#catalog-search').fill('empty');
+ await offlineSessionPage.locator('#catalog-submit').click();
+ await offlineSessionPage.locator('[data-empty-query="fantasia"]').waitFor();
+ await offlineSessionPage.locator('[data-empty-query="fantasia"]').focus();
+ await offlineSessionPage.keyboard.press('Enter');
+ await offlineSessionPage.waitForFunction(()=>document.querySelector('#results-grid .result-card'));
+ const climateFilter=offlineSessionPage.locator('[data-filter-group="clima"][data-filter-value="elfico"]');
+ await climateFilter.focus();await offlineSessionPage.keyboard.press('Enter');
+ assert.equal(await climateFilter.getAttribute('aria-pressed'),'true');
+ assert.equal(await offlineSessionPage.locator('#active-filter-chips button').count(),1);
+ const activeHomeFilter=offlineSessionPage.locator('#active-filter-chips button');
+ await activeHomeFilter.focus();await offlineSessionPage.keyboard.press('Enter');
+ assert.equal(await offlineSessionPage.locator('#active-filter-chips button').count(),0);
+ assert.equal(await climateFilter.getAttribute('aria-pressed'),'false');
+ await offlineSessionPage.waitForFunction(()=>document.activeElement.id==='catalog-search');
  await offlineSessionPage.locator('#account-trigger').click();
  await offlineSessionPage.locator('#account-panel').waitFor({state:'visible'});
  await offlineSessionPage.waitForFunction(()=>document.activeElement.id==='account-check-api');
@@ -130,6 +174,6 @@ try {
    }
   }
  }
- console.log(JSON.stringify({passed:'search, aliases, filters, pagination, sorting, detail identity, return state, empty and failure states, local and remote login messages, unavailable API with cached session, account panel Escape and focus restoration',overflow,errors},null,2));
+ console.log(JSON.stringify({passed:'search, aliases, active filter removal, empty state suggestions, pagination, sorting, image fallbacks, detail identity, return state, failure states, local and remote login, offline session, account panel focus restoration',overflow,errors},null,2));
  assert.deepEqual(overflow,[]);assert.deepEqual(errors,[]);
 } finally { await browser.close(); }

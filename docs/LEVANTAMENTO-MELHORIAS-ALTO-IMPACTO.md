@@ -147,3 +147,113 @@ As demais decisoes permitem avancar sem escolher hospedagem imediatamente. A aut
 - Criar funcionalidades administrativas antes de concluir e testar autorizacao e persistencia.
 - Sincronizar dados sem estrategia de conflito, exportacao e exclusao.
 - Adicionar dependencias de animacao ou recursos visuais que prejudiquem carregamento e acessibilidade.
+
+## Levantamento complementar: melhorias exclusivas de frontend
+
+Esta secao complementa as propostas de produto acima com oportunidades que podem ser trabalhadas no site sem depender de novas rotas ou mudancas no backend. O frontend ja tem uma base relevante: busca com filtros e ordenacao, paginacao, preservacao do contexto do catalogo, estados de erro, suporte offline, navegacao por teclado e testes em larguras moveis. As propostas abaixo ampliam essa base em vez de substituir funcionalidades existentes.
+
+| Prioridade | Melhoria | Impacto esperado | Esforco relativo | Dependencia |
+| --- | --- | --- | --- | --- |
+| P1 | Recuperacao visual de capas indisponiveis | Evita imagens quebradas e mantem os cartoes e fichas legiveis quando todas as fontes de capa falham | Baixo | Nenhuma; reutilizar o fallback visual existente |
+| P1 | Refinar busca sem resultados e filtros ativos | Ajuda o leitor a recuperar a pesquisa sem ter de apagar todos os criterios ou recomecar | Medio | Busca e filtros atuais |
+| P1 | Auditoria de acessibilidade WCAG nas paginas principais | Identifica problemas de contraste e ampliacao que os testes atuais de teclado e rotulos nao cobrem por completo | Medio | CI e navegadores ja existentes |
+| P2 | Atualizacao do app instalado e frescor offline | Explica quando o conteudo esta salvo, desatualizado ou pronto para atualizar sem interromper a leitura | Medio | Service worker existente |
+| P2 | Comparacao visual automatizada entre releases | Detecta regressao de layout e estilo que testes funcionais nao identificam | Medio | Capturas Playwright ja existentes |
+| P2 | Preferencias visuais locais | Permite adaptar tamanho do texto e contraste, persistindo as escolhas apenas no dispositivo | Medio | Design system compartilhado |
+| P3 | Melhorar compartilhamento das fichas de livros | Faz com que links de obras tenham titulo e resumo mais claros ao serem compartilhados | Baixo | Metadados editoriais atuais |
+
+### 1. Recuperacao visual de capas indisponiveis — P1
+
+**Observacao:** os cartoes do catalogo e a ficha da obra tentam fontes alternativas de capa, mas, quando todas falham, apenas desativam o manipulador de erro. A imagem permanece com falha visual.
+
+**Escopo sugerido:**
+- Exibir uma capa neutra do Bosque quando nenhuma fonte de imagem funcionar.
+- Manter dimensoes e proporcao fixas para evitar saltos no layout durante o carregamento.
+- Diferenciar imagem decorativa de capa informativa e manter texto alternativo util.
+- Usar a mesma estrategia no catalogo, na pagina de detalhes e nos destaques da pagina inicial.
+
+**Aceite:** bloquear ou invalidar todas as URLs de capa em teste deixa um fallback visivel, sem erro de imagem, deslocamento de layout ou perda do titulo/autor.
+
+### 2. Refinar busca sem resultados e filtros ativos — P1
+
+**Observacao:** o catalogo informa que nao encontrou obras e sugere alterar a pesquisa ou remover filtros, mas nao oferece uma acao contextual para remover cada criterio ativo ou explorar consultas proximas.
+
+**Escopo sugerido:**
+- Mostrar filtros ativos como etiquetas removiveis individualmente, alem da acao de limpar tudo.
+- Preservar os criterios que ainda fazem sentido ao remover uma etiqueta.
+- No estado vazio, oferecer sugestoes simples e deterministicas baseadas na consulta ou tema atual, sem enviar dados do leitor para servicos de analise.
+- Anunciar a atualizacao do numero de resultados para tecnologias assistivas sem tornar cada cartao uma regiao de anuncio.
+
+**Aceite:** leitor consegue remover um filtro sem perder os demais, entender por que nao ha resultados e iniciar uma alternativa; URL, controles e resultados permanecem sincronizados.
+
+### 3. Auditoria de acessibilidade WCAG nas paginas principais — P1
+
+**Observacao:** os testes existentes cobrem navegacao por teclado, skip links, rotulos de formularios, menu, dialogo e movimento reduzido. Ainda vale medir contraste, ampliacao e comportamento em configuracoes de acessibilidade do sistema.
+
+**Escopo sugerido:**
+- Auditar contraste de texto, controles, estados de foco, erros e componentes desabilitados nas paginas inicial, acervo, detalhes e login.
+- Validar ampliacao de texto a 200% e zoom de pagina a 400% sem perda de operacoes ou rolagem horizontal desnecessaria.
+- Verificar preferencias de movimento reduzido, alto contraste/cores forcadas e navegacao com leitor de tela nos fluxos mais usados.
+- Corrigir tokens compartilhados do design system antes de adicionar excecoes locais.
+
+**Aceite:** fluxos principais permanecem operaveis por teclado e leitor de tela; texto normal atende contraste WCAG AA de 4,5:1 e texto grande/elementos graficos atende os criterios aplicaveis; resultados e excecoes ficam cobertos por testes ou roteiro manual reproduzivel.
+
+### 4. Atualizacao do app instalado e frescor offline — P2
+
+**Observacao:** o site ja registra um service worker, guarda o app shell e comunica a disponibilidade do modo offline. A atualizacao do service worker e imediata, sem uma mensagem de interface que explique quando uma nova versao esta pronta.
+
+**Escopo sugerido:**
+- Avisar quando uma nova versao do app estiver pronta e oferecer atualizacao em um momento escolhido pelo leitor.
+- Nao recarregar automaticamente enquanto houver uma busca, formulario ou leitura em andamento.
+- Tornar visivel quando os resultados sao locais e podem estar desatualizados, incluindo uma acao clara para tentar atualizar quando houver rede.
+- Explicar o estado da conexao com mensagens consistentes entre pagina inicial, catalogo e conta.
+
+**Aceite:** teste controlado com duas versoes do service worker mostra o aviso da nova versao; aceitar atualiza sem deixar a interface em estado inconsistente; recusar mantem a leitura atual; modo offline nao e apresentado como sincronizacao de dados.
+
+### 5. Comparacao visual automatizada entre releases — P2
+
+**Observacao:** o Playwright ja gera capturas para paginas e larguras selecionadas, mas as capturas sao artefatos para inspecao, nao comparacoes automaticas com uma referencia aprovada.
+
+**Escopo sugerido:**
+- Escolher poucos estados estaveis e representativos: pagina inicial, catalogo com resultados, catalogo vazio, detalhe e login.
+- Comparar desktop e mobile no navegador oficialmente suportado, mascarando areas dinamicas justificadas.
+- Atualizar referencias apenas em mudancas visuais intencionais e revisadas.
+- Evitar tolerancias tao amplas que escondam regressao de layout.
+
+**Aceite:** uma alteracao visual inesperada em componente compartilhado falha com imagem comparativa clara; variacoes de fonte/ambiente sao controladas e a suite permanece repetivel no CI.
+
+### 6. Preferencias visuais locais — P2
+
+**Oportunidade:** oferecer controles explicitos para tamanho de texto e contraste reforcado, complementando o suporte atual a movimento reduzido do sistema operacional.
+
+**Escopo sugerido:**
+- Disponibilizar controles simples e reversiveis, sem criar temas numerosos ou opcoes redundantes.
+- Persistir preferencias apenas no navegador e aplica-las por tokens CSS compartilhados.
+- Respeitar as preferencias do sistema por padrao e nao reduzir contraste ao trocar tamanho ou tema.
+- Tornar a interface utilizavel quando armazenamento local estiver indisponivel.
+
+**Aceite:** preferencias sobrevivem a navegacao e recarregamento no mesmo dispositivo, podem ser restauradas ao padrao e nao causam overflow nas larguras testadas.
+
+### 7. Melhorar compartilhamento das fichas de livros — P3
+
+**Observacao:** a pagina de detalhes apresenta informacoes e links externos, mas pode ser mais clara quando aberta diretamente ou compartilhada fora do site.
+
+**Escopo sugerido:**
+- Definir descricao e metadados sociais a partir da obra carregada, sem incluir conteudo nao verificado.
+- Oferecer um comando para copiar o link da ficha e confirmar o resultado com uma mensagem acessivel.
+- Manter um comportamento de fallback quando a API ou a API de compartilhamento do navegador nao estiver disponivel.
+
+**Aceite:** link copiado abre a mesma obra; metadados usam titulo, autor e descricao da ficha; falhas de permissao sao comunicadas e nao impedem a navegacao.
+
+**Progresso das prioridades altas (26/10/2026):** o fallback visual de capas foi integrado aos destaques, catalogo e ficha da obra; os estados vazios do catalogo agora oferecem rotas tematicas e remocao individual/contextual de filtros; e a verificacao automatizada inicial de acessibilidade foi ampliada para contraste AA dos tokens e campos de filtro, operacao por teclado e reflow a 320 px. A validacao manual com leitor de tela e ampliacao real de texto/zoom continua recomendada para completar a auditoria WCAG.
+
+## Sequencia recomendada para o frontend
+
+1. **Entrega pequena e verificavel:** fallback consistente de capas, cobrindo os pontos de renderizacao compartilhados.
+2. **Descoberta no catalogo:** etiquetas de filtros removiveis e estados vazios com alternativas contextuais.
+3. **Acessibilidade:** auditoria de contraste, ampliacao e tecnologia assistiva; ajustar tokens e ampliar os testes.
+4. **Confianca offline:** aviso de atualizacao do app e estados de frescor dos dados.
+5. **Qualidade visual:** comparacao automatizada de um conjunto reduzido de paginas/estados antes de aumentar a cobertura.
+6. **Personalizacao e compartilhamento:** preferencia local de leitura e metadados das fichas, apos validar o ganho com leitores.
+
+As etapas 1 a 3 podem ser iniciadas sem decisao de produto ou alteracao de backend. As preferencias visuais devem ser prototipadas antes de ampliar o escopo; a comparacao visual depende de selecionar e aprovar capturas de referencia.

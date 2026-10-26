@@ -1,6 +1,7 @@
 ﻿import { BosqueCatalogApi } from "../../catalog-api.js";
 import { DEFAULT_LABEL, DEFAULT_QUERY, RESULTS_PER_PAGE, topicThemes } from "../../site-data.js";
 import { normalizeFilters } from "../../search-policy.js";
+import { loadBookCover } from "./cover-images.js";
 
 const api = new BosqueCatalogApi();
 const $ = id => document.getElementById(id);
@@ -36,6 +37,22 @@ const syncControls = () => {
     const activeFilters = Number(Boolean(state.filters.author)) + Number(state.filters.from !== null || state.filters.to !== null) + Number(state.filters.publicOnly);
     $('filter-count').textContent = activeFilters ? `(${activeFilters} ativos)` : '';
     if (activeFilters) $('catalog-filter-panel').open = true;
+    renderActiveFilters();
+};
+const getActiveFilters = () => [
+    state.filters.author ? { key: 'author', label: `Autor: ${state.filters.author}` } : null,
+    state.filters.from !== null ? { key: 'from', label: `A partir de: ${state.filters.from}` } : null,
+    state.filters.to !== null ? { key: 'to', label: `Até: ${state.filters.to}` } : null,
+    state.filters.publicOnly ? { key: 'publicOnly', label: 'Com leitura disponível' } : null
+].filter(Boolean);
+const renderActiveFilters = () => {
+    const activeFilters = getActiveFilters();
+    const container = $('active-filters');
+    container.hidden = activeFilters.length === 0;
+    container.innerHTML = activeFilters.map(filter => `
+        <button class="filter-chip" type="button" data-remove-filter="${filter.key}" aria-label="Remover filtro: ${escapeHtml(filter.label)}">
+            ${escapeHtml(filter.label)} <span aria-hidden="true">×</span>
+        </button>`).join('');
 };
 const saveSnapshot = () => {
     if (state.page < 1) return;
@@ -50,6 +67,9 @@ const status = () => {
 };
 const render = () => {
     const books = state.sort === 'title' ? [...state.books].sort((a,b) => a.title.localeCompare(b.title, 'en', {sensitivity:'base'})) : state.books;
+    const activeFilters = getActiveFilters();
+    const suggestions = topicThemes.slice(0, 3).map((topic, index) => `
+        <button class="button ghost empty-topic" type="button" data-empty-topic="${index}">${escapeHtml(topic.label)}</button>`).join('');
     $('results-grid').innerHTML = books.length ? books.map(book => `
         <article class="book-card">
             <a class="book-link" href="compra.html?book=${encodeURIComponent(book.id)}&retorno=${encodeURIComponent('livros.html' + location.search)}" data-book-id="${escapeHtml(book.id)}">
@@ -66,10 +86,18 @@ const render = () => {
     $('results-grid').querySelectorAll('[data-cover]').forEach(image => {
         const book = state.books.find(item => item.id === image.dataset.cover);
         const sources = [...new Set([...(book.coverCandidates || []), book.cover].filter(Boolean))];
-        let index = 0;
-        image.onerror = () => { if (++index < sources.length) image.src = sources[index]; else image.onerror = null; };
-        if (sources.length) image.src = sources[0];
+        loadBookCover(image, sources, book.title);
     });
+    if (!books.length) {
+        const emptyState = $('results-grid').firstElementChild;
+        const action = activeFilters.length
+            ? '<button class="button empty-clear-filters" type="button">Remover filtros</button>'
+            : '';
+        emptyState.querySelector('p').textContent = activeFilters.length
+            ? 'Nenhuma obra corresponde à pesquisa e aos filtros atuais. Remova filtros ou experimente uma rota temática.'
+            : 'Nenhuma obra corresponde a esta pesquisa. Experimente uma rota temática:';
+        emptyState.insertAdjacentHTML('beforeend', `${action}<div class="empty-suggestions">${suggestions}</div>`);
+    }
 };
 const search = async ({append = false} = {}) => {
     state.controller?.abort();
@@ -125,6 +153,39 @@ $('catalog-search-form').addEventListener('submit', event => {
 });
 $('catalog-reset').addEventListener('click', () => {
     state.filters = normalizeFilters(); syncControls(); writeUrl(true); search();
+});
+$('active-filters').addEventListener('click', event => {
+    const button = event.target.closest('[data-remove-filter]');
+    if (!button) return;
+    const nextFilters = { ...state.filters };
+    if (button.dataset.removeFilter === 'publicOnly') {
+        nextFilters.publicOnly = false;
+    } else {
+        nextFilters[button.dataset.removeFilter] = null;
+    }
+    state.filters = normalizeFilters(nextFilters);
+    syncControls(); writeUrl(true); search();
+    requestAnimationFrame(() => {
+        const nextChip = $('active-filters').querySelector('.filter-chip');
+        (nextChip || $('catalog-search')).focus();
+    });
+});
+$('results-grid').addEventListener('click', event => {
+    if (event.target.closest('.empty-clear-filters')) {
+        state.filters = normalizeFilters();
+        syncControls(); writeUrl(true); search();
+        $('catalog-search').focus();
+        return;
+    }
+    const topicButton = event.target.closest('[data-empty-topic]');
+    if (topicButton) {
+        const topic = topicThemes[Number(topicButton.dataset.emptyTopic)];
+        state.query = topic.query || DEFAULT_QUERY;
+        state.label = topic.label;
+        state.filters = normalizeFilters({ publicOnly: topic.publicDomain });
+        syncControls(); writeUrl(true); search();
+        $('catalog-status').focus();
+    }
 });
 $('catalog-sort').addEventListener('change', event => {
     state.sort = event.target.value; writeUrl(); render(); saveSnapshot();

@@ -1,5 +1,6 @@
 ﻿import { featuredBooks } from "../../site-data.js";
 import { OpenLibraryCatalogApi } from "../../open-library-api.js";
+import { loadBookCover } from "./cover-images.js";
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const id = params.get('book');
@@ -15,11 +16,8 @@ const render = book => {
     $('purchase-meta').textContent = `${book.author} · ${book.year}`;
     $('purchase-note').textContent = book.description || 'Resumo indisponível no catálogo.';
     $('purchase-edition').textContent = book.titleNote || (book.editionId ? `Registro da edição: ${book.editionId.replace('/books/', '')}` : 'Título apresentado em português.');
-    $('purchase-cover').alt = `Capa de ${book.title}`;
     const sources = [...new Set([...(book.coverCandidates || []), book.cover].filter(Boolean))];
-    let index = 0;
-    $('purchase-cover').onerror = () => { if (++index < sources.length) $('purchase-cover').src = sources[index]; else $('purchase-cover').onerror = null; };
-    if (sources.length) $('purchase-cover').src = sources[0];
+    loadBookCover($('purchase-cover'), sources, book.title);
     const link = $('purchase-source');
     try {
         const url = new URL(book.readUrl);

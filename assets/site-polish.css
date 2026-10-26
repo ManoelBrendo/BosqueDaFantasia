@@ -42,10 +42,17 @@ button:disabled { cursor: wait; opacity: .6; }
 .catalog-filters { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .85rem; margin-top: 1rem; }
 .catalog-filters label { display: grid; gap: .4rem; font-size: .85rem; }
 .catalog-filters input:not([type=checkbox]) { width: 100%; padding: .7rem; border: 1px solid #69856f; border-radius: .65rem; background: #fffdf8; color: #223127; }
+body .catalog-filters input:not([type=checkbox])::placeholder { color: #b9c9be; opacity: 1; }
 .catalog-filters .availability-filter { display: flex; align-items: center; gap: .6rem; }
 .availability-filter input { width: 20px; height: 20px; }
 .filter-help, .edition-note { font-size: .85rem; }
 .catalog-empty { grid-column: 1/-1; padding: 2rem; border: 1px dashed #69856f; border-radius: 1rem; }
+.active-filters { display: flex; flex-wrap: wrap; gap: .5rem; padding-top: .75rem; }
+.filter-chip { display: inline-flex; align-items: center; gap: .5rem; min-height: 40px; padding: .45rem .75rem; border: 1px solid var(--border); border-radius: 999px; background: var(--panel-strong); color: var(--text); font: inherit; font-size: .82rem; cursor: pointer; }
+.filter-chip:hover { border-color: var(--gold); color: var(--gold-soft); }
+.empty-suggestions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+.empty-topic { min-height: 44px; }
+.empty-clear-filters { margin-top: 1rem; }
 @media (max-width: 400px) { .catalog-filters { grid-template-columns: 1fr; } }
 
 /* Round 2: denser reading surfaces and consistent controls across pages. */

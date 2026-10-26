@@ -5,6 +5,7 @@ const APP_SHELL = [
     "./assets/forest-fallback.svg",
     "./assets/design-system.css",
     "./assets/js/site-ui.js",
+    "./assets/js/cover-images.js",
     "./search-policy.js",
     "./login.html",
     "./login.js",

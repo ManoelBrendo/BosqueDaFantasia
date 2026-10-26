@@ -1,4 +1,5 @@
 import { BosqueCatalogApi } from "./catalog-api.js?v=authors-pagination-v2";
+import { loadBookCover } from "./assets/js/cover-images.js";
 import {
     DEFAULT_LABEL,
     DEFAULT_QUERY,
@@ -126,6 +127,7 @@ const elements = {
     recentQueries: getRequiredElement("recent-queries"),
     filtersGrid: getRequiredElement("filters-grid"),
     filterSummary: getRequiredElement("filter-summary"),
+    activeFilterChips: getRequiredElement("active-filter-chips"),
     clearFilters: getRequiredElement("clear-filters"),
     favoritesGrid: getRequiredElement("favorites-grid"),
         favoriteRecommendations: getRequiredElement("favorite-recommendations"),
@@ -377,20 +379,7 @@ const applyBookCover = (image, book) => {
     }
 
     const sources = getBookCoverSources(book);
-    let sourceIndex = 0;
-
-    image.onerror = () => {
-        sourceIndex += 1;
-
-        if (sourceIndex < sources.length) {
-            image.src = sources[sourceIndex];
-            return;
-        }
-
-        image.onerror = null;
-    };
-
-    image.src = sources[0] || "";
+    loadBookCover(image, sources, book.portugueseTitle || book.title);
 };
 
 const hydrateBookImages = (root) => {
@@ -586,17 +575,33 @@ const syncFilterChips = () => {
     elements.filtersGrid.querySelectorAll("[data-filter-group][data-filter-value]").forEach((button) => {
         const isActive = state.filters[button.dataset.filterGroup] === button.dataset.filterValue;
         button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
     });
 };
 
 const renderFilterSummary = () => {
-    const activeLabels = advancedFilters
+    const activeGroups = advancedFilters
         .filter((group) => state.filters[group.id] !== group.defaultValue)
-        .map((group) => `${group.label}: ${humanFilterLabel(group.id, state.filters[group.id])}`);
+        .map((group) => ({
+            ...group,
+            activeValue: state.filters[group.id],
+            activeLabel: humanFilterLabel(group.id, state.filters[group.id])
+        }));
 
-    elements.filterSummary.textContent = activeLabels.length > 0
-        ? activeLabels.join(" | ")
+    elements.filterSummary.textContent = activeGroups.length > 0
+        ? activeGroups.map((group) => `${group.label}: ${group.activeLabel}`).join(" | ")
         : "Nenhum filtro extra ativo.";
+    elements.activeFilterChips.innerHTML = activeGroups.map((group) => `
+        <button
+            class="filter-chip"
+            type="button"
+            data-remove-filter-group="${escapeHtml(group.id)}"
+            aria-label="Remover filtro de ${escapeHtml(group.label)}: ${escapeHtml(group.activeLabel)}"
+        >
+            ${escapeHtml(group.label)}: ${escapeHtml(group.activeLabel)} <span aria-hidden="true">×</span>
+        </button>
+    `).join("");
+    elements.activeFilterChips.hidden = activeGroups.length === 0;
 };
 
 const setFiltersOpen = (isOpen) => {
@@ -1183,6 +1188,23 @@ const initFilterInteractions = () => {
         applyFiltersAndRender();
         syncFilterPanelState();
         scheduleUiStateSave();
+    });
+
+    elements.activeFilterChips.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-remove-filter-group]");
+
+        if (!button) {
+            return;
+        }
+
+        state.filters[button.dataset.removeFilterGroup] = defaultFilters[button.dataset.removeFilterGroup];
+        applyFiltersAndRender();
+        syncFilterPanelState();
+        scheduleUiStateSave();
+        window.requestAnimationFrame(() => {
+            const nextChip = elements.activeFilterChips.querySelector("button");
+            (nextChip || elements.searchInput).focus();
+        });
     });
 };
 

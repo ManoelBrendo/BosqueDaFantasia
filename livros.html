@@ -301,7 +301,9 @@
                         <label class="availability-filter"><input id="catalog-public" type="checkbox"> Com leitura disponível</label>
                         <button id="catalog-reset" class="button" type="button">Limpar filtros</button>
                     </div>
-                    </details><p class="filter-help">Os filtros consultam todo o catálogo. Títulos portugueses conhecidos também são reconhecidos.</p>
+                    </details>
+                    <div id="active-filters" class="active-filters" role="group" aria-label="Filtros ativos" hidden></div>
+                    <p class="filter-help">Os filtros consultam todo o catálogo. Títulos portugueses conhecidos também são reconhecidos.</p>
                 </form>
             </aside>
         </section>
@@ -321,7 +323,7 @@
                     <label class="sort-control" for="catalog-sort">Ordenar livros carregados
                         <select id="catalog-sort"><option value="relevance">Relevância</option><option value="title">Título: A–Z</option></select>
                     </label>
-                    <p id="catalog-status" role="status" aria-live="polite" class="catalog-status">Carregando o acervo do bosque...</p>
+                    <p id="catalog-status" role="status" aria-live="polite" tabindex="-1" class="catalog-status">Carregando o acervo do bosque...</p>
                     <button id="catalog-retry" class="button" type="button" hidden>Tentar novamente</button>
                     <button id="catalog-load-more" class="button" type="button" hidden>Carregar mais livros</button>
                 </div>
