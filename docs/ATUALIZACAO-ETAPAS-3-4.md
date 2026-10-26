@@ -33,7 +33,7 @@ As quatro páginas usam uma identidade comum: verde profundo, dourado, texto cla
 - Capturas de tela desktop/mobile em artifacts/qa; imagens inspecionadas durante a revisão visual.
 - npm.cmd test e npm.cmd run check; build público via npm.cmd run build.
 
-Os testes de navegador usam Microsoft Edge e um Playwright instalado (ou indicado por PLAYWRIGHT_MODULE). A Open Library é simulada nesses testes para manter resultados determinísticos; isso não certifica disponibilidade da API real, capas externas ou todos os metadados. A validação não é uma certificação WCAG nem substitui testes em aparelhos físicos e leitores de tela.
+Os testes de navegador usam Playwright e Microsoft Edge por padrao; `BOSQUE_BROWSER_EXECUTABLE_PATH` seleciona um executavel especifico e `BOSQUE_BROWSER_CHANNEL` seleciona outro canal Chromium. `npm run test:e2e` inicia e encerra o servidor local e executa os testes de busca, API/offline, layout e acessibilidade. A CI do GitHub instala e valida com Brave e publica capturas como artefato por sete dias. O workflow do Pages executa `npm run smoke:deploy` apos publicar; `BOSQUE_API_HEALTH_URL` habilita tambem o teste da API. A Open Library e simulada nos testes de navegador para manter resultados determinísticos; isso não certifica disponibilidade da API real, capas externas ou todos os metadados. A validação não é uma certificação WCAG nem substitui testes em aparelhos físicos e leitores de tela.
 
 ## Próximas etapas
 

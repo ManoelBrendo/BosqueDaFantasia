@@ -1,7 +1,13 @@
 ﻿import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({channel:'msedge',headless:true});
+const launchOptions = { headless: true };
+if (process.env.BOSQUE_BROWSER_EXECUTABLE_PATH) {
+ launchOptions.executablePath = process.env.BOSQUE_BROWSER_EXECUTABLE_PATH;
+} else {
+ launchOptions.channel = process.env.BOSQUE_BROWSER_CHANNEL || 'msedge';
+}
+const browser = await chromium.launch(launchOptions);
 const context = await browser.newContext({serviceWorkers:'block',reducedMotion:'reduce'});
 await context.route('**/*', route => {
  const url=new URL(route.request().url());
@@ -29,9 +35,11 @@ try {
   assert.equal(await page.locator('#primary-navigation').isVisible(),false);
   assert.equal(await page.evaluate(()=>document.activeElement.id),'site-menu-toggle');
   await page.setViewportSize({width:1440,height:900});
+  await page.locator('#primary-navigation').waitFor({state:'visible'});
+  await page.locator('#site-menu-toggle').waitFor({state:'hidden'});
   assert.equal(await page.locator('#primary-navigation').isVisible(),true);
   assert.equal(await page.locator('#site-menu-toggle').isVisible(),false);
-  if(file.startsWith('compra')) await page.waitForFunction(()=>document.querySelector('#purchase-title').textContent==='The Hobbit');
+  if(file.startsWith('compra')) await page.waitForFunction(()=>document.querySelector('#purchase-title').textContent==='O Hobbit');
   await page.screenshot({path:`artifacts/qa/redesign-${file.split('.')[0]}-desktop.png`});
   await page.setViewportSize({width:390,height:844});
   await page.screenshot({path:`artifacts/qa/redesign-${file.split('.')[0]}-mobile.png`});

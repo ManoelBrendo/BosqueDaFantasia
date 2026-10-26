@@ -90,10 +90,10 @@ As maiores oportunidades sao transformar a conta em uma experiencia realmente co
 
 **Escopo sugerido:**
 - Executar `npm run check`, `npm test` e `npm run build` em cada pull request.
-- Rodar testes de navegador em ambiente controlado para busca, login, biblioteca, falha da API, offline e telas estreitas.
+- Rodar `npm run test:e2e` em ambiente controlado para busca, login, biblioteca, falha da API, offline, acessibilidade e telas estreitas; validar no Brave oficialmente suportado.
 - Manter teste de acessibilidade focado em teclado, rotulos, dialogos e contraste nas paginas principais.
 - Guardar artefatos e logs de falha no pipeline, sem incluir dados de usuarios ou segredos.
-- Adicionar um smoke test pos-deploy para paginas principais e `/api/health`, se o backend estiver publicado.
+- Executar smoke test pos-deploy para a pagina publicada e `/api/health`, se `BOSQUE_API_HEALTH_URL` estiver configurada.
 
 **Aceite:** pull request nao pode ser integrada com verificacoes obrigatorias falhando; testes sao repetiveis em ambiente limpo; falha identifica pagina/cenario; nenhum teste depende de conta real ou chave de servico externo.
 
@@ -115,7 +115,7 @@ As maiores oportunidades sao transformar a conta em uma experiencia realmente co
 | Administracao editorial | O proprietario do projeto sera o administrador/editor inicial e usara um endereco Gmail. | Nao gravar o e-mail pessoal em codigo ou documentacao publica. Provisionar a conta por configuracao operacional segura e permitir somente papeis explicitamente autorizados no servidor. |
 | Mensagens transacionais | Ainda nao foi escolhido o servico que enviara codigos de confirmacao aos enderecos dos usuarios. | A preferencia por um endereco Gmail para o administrador nao define o remetente do site. Escolher e testar um servico de envio antes de implementar confirmacao por codigo; nunca colocar senha de e-mail no frontend ou repositorio. |
 | Retencao de contas | Contas remotas DEVEM ser excluidas apos dois meses sem uso. | Requisito obrigatorio pendente de implementacao na etapa de ciclo de vida da conta. Apagar tambem dados privados vinculados; o modo local sem cadastro nao e afetado. |
-| CI e navegadores | Preferencia por manter o CI no GitHub; Brave e o navegador oficialmente suportado. | GitHub Actions agora executa `npm run check`, `npm test` e `npm run build` antes do deploy do Pages. Seguem pendentes testes de navegador para os fluxos de API/offline e validacao com Brave real; teste apenas em Chromium nao comprova sozinho compatibilidade com Brave. |
+| CI e navegadores | Preferencia por manter o CI no GitHub; Brave e o navegador oficialmente suportado. | GitHub Actions executa `npm run check`, `npm test`, `npm run test:e2e` e `npm run build`; testes de navegador e acessibilidade rodam no Brave e capturas ficam como artefato por sete dias. O deploy do Pages verifica o site e pode testar `/api/health` quando `BOSQUE_API_HEALTH_URL` estiver configurada nas variaveis do repositorio. |
 
 ### Recomendacao inicial de hospedagem (ainda nao aprovada)
 

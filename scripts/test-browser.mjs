@@ -1,7 +1,13 @@
 ﻿import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({channel: 'msedge',headless:true});
+const launchOptions = { headless: true };
+if (process.env.BOSQUE_BROWSER_EXECUTABLE_PATH) {
+ launchOptions.executablePath = process.env.BOSQUE_BROWSER_EXECUTABLE_PATH;
+} else {
+ launchOptions.channel = process.env.BOSQUE_BROWSER_CHANNEL || 'msedge';
+}
+const browser = await chromium.launch(launchOptions);
 await mkdir('artifacts/qa',{recursive:true});
 const context = await browser.newContext({serviceWorkers:'block'});
 let calls=[];
@@ -20,7 +26,7 @@ await context.route('**/*',async route=>{
   calls.push(url);const q=url.searchParams.get('q'); const page=Number(url.searchParams.get('page'));
   if(q.includes('slow')) await new Promise(resolve=>setTimeout(resolve,300));
   if(q.includes('failure')) return route.abort();
-  const docs=q.includes('slow')?[doc(88,'Stale Search')]:q.includes('fast')?[doc(89,'Latest Search')]:q.includes('empty')?[]:q.includes('key:/works/OL99W')?[doc(99,'Direct Link Book')]:page===2?[doc(1,'Zebra Book'),doc(3,'Middle Book')]:[doc(1,'Zebra Book'),doc(2,'Alpha Book')];
+  const docs=q.includes('slow')?[doc(88,'Stale Search')]:q.includes('fast')?[doc(89,'Latest Search')]:q.includes('empty')?[]:q.includes('key:/works/OL99W')?[doc(99,'Direct Link Chronicle')]:page===2?[doc(1,'Zebra Volume'),doc(3,'Middle Volume')]:[doc(1,'Zebra Volume'),doc(2,'Alpha Volume')];
   return route.fulfill({json:{numFound:docs.length?18:0,docs}});
  }
  return route.abort();
@@ -31,16 +37,16 @@ try {
  await page.goto('http://127.0.0.1:4173/livros.html?q=o+hobbit');
  await page.locator('.book-card').first().waitFor();
  assert.ok(calls[0].searchParams.get('q').includes('The Hobbit'));
- assert.equal(await page.locator('.book-copy h3').first().textContent(),'Zebra Book');
+ assert.equal(await page.locator('.book-copy h3').first().textContent(),'Zebra Volume');
  await page.locator('#catalog-load-more').click();
  await page.waitForFunction(()=>document.querySelectorAll('.book-card').length===3);
  const before=calls.length;
  await page.locator('#catalog-sort').selectOption('title');
  assert.equal(calls.length,before);
- assert.equal(await page.locator('.book-copy h3').first().textContent(),'Alpha Book');
+ assert.equal(await page.locator('.book-copy h3').first().textContent(),'Alpha Volume');
  await page.locator('.book-link').first().click();
  await page.waitForURL('**/compra.html?**');
- assert.equal(await page.locator('#purchase-title').textContent(),'Alpha Book');
+ assert.equal(await page.locator('#purchase-title').textContent(),'Alpha Volume');
  await page.locator('#purchase-back').click();
  await page.locator('.book-card').first().waitFor();
  assert.equal(await page.locator('.book-card').count(),3);
@@ -97,7 +103,7 @@ try {
  await offlineSessionPage.close();
  await remoteLoginPage.close();
  await page.goto('http://127.0.0.1:4173/compra.html?book=OL99W');
- await page.waitForFunction(()=>document.querySelector('#purchase-title').textContent==='Direct Link Book');
+ await page.waitForFunction(()=>document.querySelector('#purchase-title').textContent==='Direct Link Chronicle');
  await page.goto('http://127.0.0.1:4173/compra.html?book=invalid');
  await page.waitForFunction(()=>document.querySelector('#purchase-title').textContent==='Livro não encontrado');
  const overflow=[];

@@ -12,7 +12,9 @@
     "migrate:postgres": "node ./scripts/migrate-json-to-postgres.mjs",
     "test": "node scripts/test-search.mjs && node scripts/test-stage12.mjs && node scripts/test-auth.mjs && node scripts/test-account-errors.mjs && node scripts/test-render-books.mjs && node scripts/test-render-profile.mjs && node scripts/test-render-affinity.mjs && node scripts/test-site-data-schema.mjs && node scripts/test-search-quality.mjs",
     "test:browser": "node scripts/test-browser.mjs",
-    "test:accessibility": "node scripts/test-accessibility.mjs"
+    "test:accessibility": "node scripts/test-accessibility.mjs",
+    "test:e2e": "node scripts/run-browser-tests.mjs",
+    "smoke:deploy": "node scripts/smoke-deploy.mjs"
   },
   "dependencies": {
     "pg": "^8.16.3"
@@ -20,5 +22,8 @@
   "engines": {
     "node": ">=20"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "playwright": "^1.64.1"
+  }
 }

@@ -16,15 +16,16 @@ Este runbook descreve o caminho seguro para publicar o Bosque da Fantasia e chec
 1. Confirmar escopo da rodada no documento de requisitos.
 2. Rodar `npm run check`.
 3. Rodar `npm test`.
-4. Rodar `npm run build`.
-5. Testar manualmente:
+4. Rodar `npm run test:e2e` para validar busca, conta, offline, layout e acessibilidade em navegador.
+5. Rodar `npm run build`.
+6. Testar manualmente:
    - Login/cadastro com API desligada.
    - Busca no acervo.
    - Oraculo de afinidade.
    - Guardar/remover livro do relicario.
    - Ficha do livro.
-6. Conferir `git status --short`.
-7. Garantir que estes caminhos nao entram no commit:
+7. Conferir `git status --short`.
+8. Garantir que estes caminhos nao entram no commit:
    - `dist/`
    - `backend/data/`
    - `backend/uploads/`
@@ -54,7 +55,8 @@ O site nao precisa do backend para login local. O backend Node e opcional e serv
 8. Se houver dados legados, mantenha uma copia segura de `backend/data/bosque-db.json` e `backend/uploads`, execute `npm run migrate:postgres` de ambiente confiavel e valide usuarios, papeis e arquivos antes de mudar o frontend.
 9. Aplique temporariamente `BOSQUE_BOOTSTRAP_ADMIN_EMAIL` e `BOSQUE_BOOTSTRAP_ADMIN_PASSWORD` para provisionar o primeiro admin; remova as duas variaveis depois da inicializacao confirmada.
 10. Confira `https://sua-api.example.com/api/health` e depois defina `window.BOSQUE_API_BASE` em `site-config.js` com essa origem HTTPS.
-11. Rode `npm run build`, publique o conteudo de `dist` no host estatico e teste login remoto, credencial invalida, API indisponivel e acesso local.
+11. Defina a variavel de repositorio GitHub Actions `BOSQUE_API_HEALTH_URL` com a URL HTTPS completa de `/api/health` para incluir o backend no smoke test pos-deploy; sem ela, o teste da API e explicitamente ignorado.
+12. Rode `npm run build`, publique o conteudo de `dist` no host estatico e teste login remoto, credencial invalida, API indisponivel e acesso local.
 
 O contrato de bootstrap ainda nao implementa recuperacao de conta, sincronizacao de favoritos ou rotas administrativas de produto. Nao trate o endpoint de health como verificacao da sessao do usuario.
 
@@ -67,6 +69,7 @@ O contrato de bootstrap ainda nao implementa recuperacao de conta, sincronizacao
 - Em producao, a API recusa iniciar sem `DATABASE_URL` e `BOSQUE_JWT_SECRET` forte.
 - O health check verifica a conectividade PostgreSQL em cada requisicao; uma API sem acesso ao banco nao deve ser considerada pronta.
 - Provisionar o primeiro administrador em staging, remover as variaveis bootstrap e validar login apos reiniciar a API.
+- O workflow do GitHub Pages verifica a pagina publicada e, quando configurada, a URL publica `/api/health` apos o deploy.
 
 Variaveis importantes:
 
