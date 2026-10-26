@@ -99,6 +99,15 @@ try {
  assert.equal(await offlineSessionPage.locator('body').evaluate(body=>body.classList.contains('auth-locked')),false);
  assert.equal(await offlineSessionPage.evaluate(()=>localStorage.getItem('bosque-api-token')),'remote-token');
  assert.equal(await offlineSessionPage.locator('.account-mode-badge').textContent(),'Conta no servidor');
+ await offlineSessionPage.locator('#account-trigger').click();
+ await offlineSessionPage.locator('#account-panel').waitFor({state:'visible'});
+ await offlineSessionPage.waitForFunction(()=>document.activeElement.id==='account-check-api');
+ assert.equal(await offlineSessionPage.locator('#account-trigger').getAttribute('aria-expanded'),'true');
+ await offlineSessionPage.keyboard.press('Escape');
+ await offlineSessionPage.waitForFunction(()=>!document.querySelector('#account-widget').classList.contains('is-open'));
+ assert.equal(await offlineSessionPage.locator('#account-panel').getAttribute('inert'),'');
+ assert.equal(await offlineSessionPage.locator('#account-trigger').getAttribute('aria-expanded'),'false');
+ assert.equal(await offlineSessionPage.evaluate(()=>document.activeElement.id),'account-trigger');
  await offlineSessionPage.evaluate(()=>localStorage.clear());
  await offlineSessionPage.close();
  await remoteLoginPage.close();
@@ -121,6 +130,6 @@ try {
    }
   }
  }
- console.log(JSON.stringify({passed:'search, aliases, filters, pagination, sorting, detail identity, return state, empty and failure states, local and remote login messages, unavailable API with cached session',overflow,errors},null,2));
+ console.log(JSON.stringify({passed:'search, aliases, filters, pagination, sorting, detail identity, return state, empty and failure states, local and remote login messages, unavailable API with cached session, account panel Escape and focus restoration',overflow,errors},null,2));
  assert.deepEqual(overflow,[]);assert.deepEqual(errors,[]);
 } finally { await browser.close(); }

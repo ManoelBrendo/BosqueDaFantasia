@@ -810,6 +810,22 @@ const ensureAccountWidget = () => {
         const isOpen = widget.classList.toggle("is-open");
         widget.querySelector("#account-panel").inert = !isOpen;
         widget.querySelector("#account-trigger")?.setAttribute("aria-expanded", String(isOpen));
+        if (isOpen) {
+            const panel = widget.querySelector("#account-panel");
+            const focusPanel = (frames = 0) => {
+                if (!widget.classList.contains("is-open") || panel.inert || frames >= 60) {
+                    return;
+                }
+
+                if (window.getComputedStyle(panel).visibility === "visible") {
+                    panel.querySelector("#account-check-api")?.focus();
+                    return;
+                }
+
+                window.requestAnimationFrame(() => focusPanel(frames + 1));
+            };
+            window.requestAnimationFrame(() => focusPanel());
+        }
     });
 
     document.addEventListener("click", (event) => {
