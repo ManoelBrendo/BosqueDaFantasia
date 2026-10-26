@@ -29,9 +29,9 @@ As maiores oportunidades sao transformar a conta em uma experiencia realmente co
 
 **Aceite:** migracao repetivel e testada; dados e papeis preservados; falha durante migracao nao apaga a origem; backup restaurado em ambiente isolado; escrita/leitura validada com mais de uma sessao e apos reinicio do servico.
 
-**Progresso local:** Railway foi escolhido como alvo de preparacao; a API reconhece `PORT`, usa bind publico em producao, exige `DATABASE_URL` e possui armazenamento transacional com migracoes de schema. O importador legado foi preparado para preservar a origem e nao sobrescrever um destino com dados.
+**Progresso local:** Railway foi escolhido como alvo. A API reconhece `PORT`, usa bind publico em producao, exige `DATABASE_URL`, possui armazenamento transacional com migracoes de schema e o importador legado preserva a origem e nao sobrescreve um destino com dados. O health check agora confirma a conectividade PostgreSQL.
 
-**Pendente para concluir:** provisionar Railway/PostgreSQL, executar a importacao com copia de seguranca, ativar backups, testar restauracao e validar deploy/health. Hospedar o dominio do site, por si so, nao fornece necessariamente hospedagem de API ou banco.
+**Pendente para concluir:** provisionar Railway/PostgreSQL, executar a importacao com copia de seguranca, ativar backups agendados, testar restauracao isolada e validar deploy/health no servico real. Hospedar o dominio do site, por si so, nao fornece necessariamente hospedagem de API ou banco.
 
 ## 2. Biblioteca pessoal sincronizada — P1
 
@@ -110,12 +110,12 @@ As maiores oportunidades sao transformar a conta em uma experiencia realmente co
 
 | Tema | Decisao registrada | Consequencia para o trabalho |
 | --- | --- | --- |
-| Hospedagem e banco | Ainda sem provedor escolhido; a escolha pode ser adiada se nao for necessaria agora. | Nao bloquear melhorias que nao dependem do backend. Antes da sincronizacao ou migracao de dados, escolher hospedagem e banco transacional e testar restauracao. |
+| Hospedagem e banco | Railway escolhido para API e PostgreSQL. | Provisionar os servicos e `DATABASE_URL`; validar migracao, backups, restauracao isolada e health check antes de usar contas reais. |
 | Conta e biblioteca | O modo local continua sem cadastro. Quando hospedado, contas remotas exigem e-mail valido e, se viavel, confirmacao por codigo enviado ao e-mail. | Manter a conta local independente; confirmar o endereco antes de habilitar a conta remota. Definir como usuarios atuais entram nesse fluxo antes do lancamento. |
 | Administracao editorial | O proprietario do projeto sera o administrador/editor inicial e usara um endereco Gmail. | Nao gravar o e-mail pessoal em codigo ou documentacao publica. Provisionar a conta por configuracao operacional segura e permitir somente papeis explicitamente autorizados no servidor. |
 | Mensagens transacionais | Ainda nao foi escolhido o servico que enviara codigos de confirmacao aos enderecos dos usuarios. | A preferencia por um endereco Gmail para o administrador nao define o remetente do site. Escolher e testar um servico de envio antes de implementar confirmacao por codigo; nunca colocar senha de e-mail no frontend ou repositorio. |
 | Retencao de contas | Contas remotas DEVEM ser excluidas apos dois meses sem uso. | Requisito obrigatorio pendente de implementacao na etapa de ciclo de vida da conta. Apagar tambem dados privados vinculados; o modo local sem cadastro nao e afetado. |
-| CI e navegadores | Preferencia por manter o CI no GitHub; Brave e o navegador oficialmente suportado. | Planejar GitHub Actions. Validar com Brave real no pipeline ou documentar uma alternativa equivalente; teste apenas em Chromium nao comprova sozinho compatibilidade com Brave. |
+| CI e navegadores | Preferencia por manter o CI no GitHub; Brave e o navegador oficialmente suportado. | GitHub Actions agora executa `npm run check`, `npm test` e `npm run build` antes do deploy do Pages. Seguem pendentes testes de navegador para os fluxos de API/offline e validacao com Brave real; teste apenas em Chromium nao comprova sozinho compatibilidade com Brave. |
 
 ### Recomendacao inicial de hospedagem (ainda nao aprovada)
 

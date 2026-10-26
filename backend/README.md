@@ -61,14 +61,18 @@ http://127.0.0.1:4180
 
 O frontend pode continuar no GitHub Pages com dominio proprio; a API Node e o PostgreSQL ficam em servicos separados no mesmo projeto Railway.
 
-1. Configure o servico Node com comando `npm run api` e a raiz do repositorio.
+1. Configure o servico Node com a raiz do repositorio, Node 20 ou superior e comando `npm run api`.
 2. Adicione PostgreSQL ao projeto e defina `DATABASE_URL` usando a referencia privada fornecida pelo Railway.
 3. Configure `BOSQUE_JWT_SECRET` com pelo menos 32 caracteres aleatorios, `BOSQUE_CORS_ORIGIN` com a origem HTTPS exata do frontend e as variaveis de bootstrap do primeiro admin somente durante o provisionamento.
-4. A API usa `PORT` automaticamente e escuta em `0.0.0.0` em producao.
+4. Configure o health check do servico para `/api/health`. O endpoint confirma conectividade com o banco e retorna falha quando o PostgreSQL nao responde.
 5. Execute a importacao do legado uma unica vez, de um ambiente confiavel com acesso ao banco e aos arquivos locais, usando `npm run migrate:postgres`.
-6. Ative backups no PostgreSQL e teste a restauracao antes de usar contas reais. Nao publique nem solicite credenciais no codigo-fonte ou nesta documentacao.
+6. Na aba Backups do servico PostgreSQL, habilite os agendamentos diarios, semanais e mensais. A retencao documentada pelo Railway e de 6, 27 e 89 dias, respectivamente; confirme os limites e custos atuais antes de ativar.
+7. Antes de usar contas reais, faca um teste de restauracao em ambiente isolado e confira login, papeis e leitura de arquivos. Nao teste uma restauracao sobre o banco de producao em uso.
+8. A API usa `PORT` automaticamente e escuta em `0.0.0.0` em producao.
 
 O repositorio nao esta conectado nem implantado no Railway. Sao necessarios projeto, banco e DNS configurados para validar conectividade, backup, restore e deploy real.
+
+Railway informa que backups de volume podem ser agendados ou criados manualmente e que uma restauracao so pode ser feita no mesmo projeto e ambiente. A restauracao prepara uma alteracao de volume para revisao antes do deploy; planeje o teste para nao aplicar essa alteracao ao servico de producao. Consulte [Backups do Railway](https://docs.railway.com/volumes/backups) e [PostgreSQL no Railway](https://docs.railway.com/databases/postgresql).
 
 ## Frontend com API centralizada
 

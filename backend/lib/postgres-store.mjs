@@ -93,6 +93,11 @@ export const initializePostgresStore = async () => {
     }
 };
 
+export const checkPostgresConnection = async () => {
+    await ensureInitialized();
+    await requirePool().query("SELECT 1");
+};
+
 export const readPostgresCollection = async (name) => {
     assertCollection(name);
     await ensureInitialized();

@@ -4,6 +4,7 @@ import path from "node:path";
 import { config } from "./config.mjs";
 import {
     importLegacyCollections as importPostgresLegacyCollections,
+    checkPostgresConnection,
     initializePostgresStore,
     readPostgresFileContent,
     readPostgresCollection,
@@ -135,6 +136,12 @@ export const updateCollection = (name, updater) => withStoreLock(async () => {
 export const initializeStore = async () => {
     if (config.databaseUrl) {
         await initializePostgresStore();
+    }
+};
+
+export const checkStoreHealth = async () => {
+    if (config.databaseUrl) {
+        await checkPostgresConnection();
     }
 };
 

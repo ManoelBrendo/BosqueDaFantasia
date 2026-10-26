@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { config } from "./lib/config.mjs";
-import { initializeStore } from "./lib/json-store.mjs";
+import { checkStoreHealth, initializeStore } from "./lib/json-store.mjs";
 import { getAuthUser, loginUser, publicUser, registerUser, createToken, migrateUserRoles, provisionAdmin } from "./lib/auth.mjs";
 import { readJsonBody, sendJson, serveStatic } from "./lib/http-utils.mjs";
 import { listUserFiles, readUserFile, saveUserFile } from "./lib/files.mjs";
@@ -51,6 +51,7 @@ const routeApi = async (request, response) => {
     const route = url.pathname;
 
     if (request.method === "GET" && route === "/api/health") {
+        await checkStoreHealth();
         sendJson(response, 200, {
             ok: true,
             name: "Bosque da Fantasia API",

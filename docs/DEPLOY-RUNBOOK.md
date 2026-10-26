@@ -47,12 +47,14 @@ O site nao precisa do backend para login local. O backend Node e opcional e serv
 1. Crie um servico Node.js com Node 20 ou superior e publique o repositorio com `npm run api` como comando de inicio.
 2. Configure as variaveis de ambiente abaixo no painel seguro do provedor. Nao adicione valores reais ao repositorio nem ao arquivo `site-config.js`.
 3. Adicione PostgreSQL e configure `DATABASE_URL` com a referencia privada do servico de banco.
-4. Ative backups do banco e teste uma restauracao em ambiente isolado antes de receber contas reais.
-5. Ative HTTPS e configure `BOSQUE_CORS_ORIGIN` com a origem exata do site estatico (sem barra final). A API reconhece `PORT` do provedor e escuta em `0.0.0.0` em producao.
-6. Se houver dados legados, mantenha uma copia segura de `backend/data/bosque-db.json` e `backend/uploads`, execute `npm run migrate:postgres` de ambiente confiavel e valide usuarios, papeis e arquivos antes de mudar o frontend.
-7. Aplique temporariamente `BOSQUE_BOOTSTRAP_ADMIN_EMAIL` e `BOSQUE_BOOTSTRAP_ADMIN_PASSWORD` para provisionar o primeiro admin; remova as duas variaveis depois da inicializacao confirmada.
-8. Confira `https://sua-api.example.com/api/health` e depois defina `window.BOSQUE_API_BASE` em `site-config.js` com essa origem HTTPS.
-9. Rode `npm run build`, publique o conteudo de `dist` no host estatico e teste login remoto, credencial invalida, API indisponivel e acesso local.
+4. Configure o health check do servico para `/api/health`; ele so retorna sucesso quando a conexao PostgreSQL responde.
+5. No Railway, habilite backups diarios, semanais e mensais para o volume do PostgreSQL. A retencao publicada e 6, 27 e 89 dias, respectivamente; confira custos e limites atuais. Consulte [Backups do Railway](https://docs.railway.com/volumes/backups).
+6. Teste a restauracao antes de receber contas reais, em ambiente isolado. No Railway, uma restauracao e restrita ao mesmo projeto e ambiente e prepara uma troca de volume para revisao; nao aplique uma restauracao de teste ao servico de producao.
+7. Ative HTTPS e configure `BOSQUE_CORS_ORIGIN` com a origem exata do site estatico (sem barra final). A API reconhece `PORT` do provedor e escuta em `0.0.0.0` em producao.
+8. Se houver dados legados, mantenha uma copia segura de `backend/data/bosque-db.json` e `backend/uploads`, execute `npm run migrate:postgres` de ambiente confiavel e valide usuarios, papeis e arquivos antes de mudar o frontend.
+9. Aplique temporariamente `BOSQUE_BOOTSTRAP_ADMIN_EMAIL` e `BOSQUE_BOOTSTRAP_ADMIN_PASSWORD` para provisionar o primeiro admin; remova as duas variaveis depois da inicializacao confirmada.
+10. Confira `https://sua-api.example.com/api/health` e depois defina `window.BOSQUE_API_BASE` em `site-config.js` com essa origem HTTPS.
+11. Rode `npm run build`, publique o conteudo de `dist` no host estatico e teste login remoto, credencial invalida, API indisponivel e acesso local.
 
 O contrato de bootstrap ainda nao implementa recuperacao de conta, sincronizacao de favoritos ou rotas administrativas de produto. Nao trate o endpoint de health como verificacao da sessao do usuario.
 
@@ -63,6 +65,7 @@ O contrato de bootstrap ainda nao implementa recuperacao de conta, sincronizacao
 - Testar a restauracao do PostgreSQL em uma instancia isolada e confirmar login, listagem e leitura de arquivos restaurados.
 - Manter a copia legada JSON/uploads protegida ate validar a importacao; o importador preserva a origem e recusa sobrescrever colecoes preenchidas.
 - Em producao, a API recusa iniciar sem `DATABASE_URL` e `BOSQUE_JWT_SECRET` forte.
+- O health check verifica a conectividade PostgreSQL em cada requisicao; uma API sem acesso ao banco nao deve ser considerada pronta.
 - Provisionar o primeiro administrador em staging, remover as variaveis bootstrap e validar login apos reiniciar a API.
 
 Variaveis importantes:
@@ -92,7 +95,7 @@ window.BOSQUE_API_BASE = "https://sua-api.example.com";
 - W1 Descoberta: o que mudou e qual usuario impacta?
 - W2 Desenho: estados de UI/API/offline foram previstos?
 - W3 Implementacao: codigo e docs foram atualizados?
-- W4 Verificacao: `check`, `build` e testes manuais passaram?
+- W4 Verificacao: `npm run check`, `npm test`, `npm run build` e testes manuais passaram? No Railway, `/api/health` respondeu com o banco disponivel?
 - W5 Aprendizado: quais riscos sobraram para a proxima rodada?
 
 ## Rollback
