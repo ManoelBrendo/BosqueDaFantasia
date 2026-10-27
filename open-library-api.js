@@ -2,7 +2,7 @@ import { buildSearchQuery } from "./search-policy.js";
 import { rankAndDeduplicateBooks } from "./search-quality.js";
 const OPEN_LIBRARY_SEARCH_URL = "https://openlibrary.org/search.json";
 const OPEN_LIBRARY_COVER_SIZE = "M";
-const SEARCH_CACHE_PREFIX = "bosque-cache:portuguese-titles-v1:";
+const SEARCH_CACHE_PREFIX = "bosque-cache:portuguese-titles-v2:";
 const SEARCH_CACHE_TTL_MS = 1000 * 60 * 60 * 12;
 const OPEN_LIBRARY_FIELDS = [
     "key",
@@ -70,9 +70,28 @@ const TITLE_TRANSLATIONS = new Map([
     ["alice's adventures in wonderland", "Alice no País das Maravilhas"],
     ["the wonderful wizard of oz", "O Maravilhoso Mágico de Oz"],
     ["the lord of the rings", "O Senhor dos Anéis"],
+    ["the fellowship of the ring", "A Sociedade do Anel"],
+    ["the two towers", "As Duas Torres"],
+    ["the return of the king", "O Retorno do Rei"],
+    ["the silmarillion", "O Silmarillion"],
     ["the hobbit", "O Hobbit"],
     ["the chronicles of narnia", "As Crônicas de Nárnia"],
+    ["the lion, the witch and the wardrobe", "O Leão, a Feiticeira e o Guarda-Roupa"],
+    ["prince caspian", "Príncipe Caspian"],
+    ["the voyage of the dawn treader", "A Viagem do Peregrino da Alvorada"],
+    ["the silver chair", "A Cadeira de Prata"],
+    ["the last battle", "A Última Batalha"],
     ["harry potter and the philosopher's stone", "Harry Potter e a Pedra Filosofal"],
+    ["a game of thrones", "A Guerra dos Tronos"],
+    ["the last unicorn", "O Último Unicórnio"],
+    ["the neverending story", "A História Sem Fim"],
+    ["the dark crystal", "O Cristal Encantado"],
+    ["the golden compass", "A Bússola de Ouro"],
+    ["the subtle knife", "A Faca Sutil"],
+    ["the amber spyglass", "A Luneta Âmbar"],
+    ["the eye of the world", "O Olho do Mundo"],
+    ["a wizard of earthsea", "O Feiticeiro de Terramar"],
+    ["the once and future king", "O Único e Eterno Rei"],
     ["the english edition", "A Edição em Inglês"],
     ["english edition", "Edição em Inglês"]
 ]);
@@ -116,9 +135,32 @@ const TITLE_WORD_TRANSLATIONS = new Map([
     ["adventures", "aventuras"],
     ["magic", "magia"],
     ["wizard", "mago"],
+    ["wizards", "magos"],
     ["witch", "bruxa"],
+    ["witches", "bruxas"],
     ["dragon", "dragão"],
     ["dragons", "dragões"],
+    ["unicorn", "unicórnio"],
+    ["unicorns", "unicórnios"],
+    ["lion", "leão"],
+    ["lions", "leões"],
+    ["wolf", "lobo"],
+    ["wolves", "lobos"],
+    ["sword", "espada"],
+    ["swords", "espadas"],
+    ["shadow", "sombra"],
+    ["shadows", "sombras"],
+    ["moon", "lua"],
+    ["star", "estrela"],
+    ["stars", "estrelas"],
+    ["sea", "mar"],
+    ["ocean", "oceano"],
+    ["mountain", "montanha"],
+    ["mountains", "montanhas"],
+    ["tower", "torre"],
+    ["towers", "torres"],
+    ["dream", "sonho"],
+    ["dreams", "sonhos"],
     ["goblin", "goblin"],
     ["goblins", "goblins"],
     ["dark", "sombrio"],
@@ -134,7 +176,7 @@ const TITLE_WORD_TRANSLATIONS = new Map([
     ["editions", "edições"]
 ]);
 
-const translateTitle = (title) => {
+export const translateBookTitle = (title) => {
     const original = normalizeSpaces(title);
     const knownTranslation = TITLE_TRANSLATIONS.get(normalizeLookup(original));
 
@@ -561,7 +603,7 @@ const buildBookRecord = (doc, placeholderCover) => {
     const author = doc.author_name?.[0] || "Autor nao informado";
     const year = doc.first_publish_year || "Ano nao informado";
     const originalTitle = normalizeSpaces(edition?.title || doc.title);
-    const translatedTitle = normalizeSpaces(portugueseEdition?.title || translateTitle(originalTitle));
+    const translatedTitle = normalizeSpaces(portugueseEdition?.title || translateBookTitle(originalTitle));
     const subjects = pickSubjects(doc.subject || []);
     const climateKey = inferClimateKey(subjects);
     const difficulty = inferDifficulty({

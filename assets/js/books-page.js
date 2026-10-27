@@ -6,7 +6,7 @@ import { loadBookCover } from "./cover-images.js";
 const api = new BosqueCatalogApi();
 const $ = id => document.getElementById(id);
 const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
-const snapshotKey = 'bosque-catalog-v2';
+const snapshotKey = 'bosque-catalog-v3';
 const state = { books: [], page: 0, total: 0, hasMore: false, controller: null, sort: 'relevance', filters: {}, query: DEFAULT_QUERY, label: DEFAULT_LABEL, source: '' };
 let retryAppend = false;
 
@@ -66,7 +66,7 @@ const status = () => {
     $('catalog-load-more').hidden = !state.hasMore;
 };
 const render = () => {
-    const books = state.sort === 'title' ? [...state.books].sort((a,b) => a.title.localeCompare(b.title, 'en', {sensitivity:'base'})) : state.books;
+    const books = state.sort === 'title' ? [...state.books].sort((a,b) => a.title.localeCompare(b.title, 'pt-BR', {sensitivity:'base'})) : state.books;
     const activeFilters = getActiveFilters();
     const suggestions = topicThemes.slice(0, 3).map((topic, index) => `
         <button class="button ghost empty-topic" type="button" data-empty-topic="${index}">${escapeHtml(topic.label)}</button>`).join('');

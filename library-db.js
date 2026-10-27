@@ -89,6 +89,7 @@ const scoreBookForQuery = (book, normalizedQuery) => {
     const fields = [
         book.title,
         book.originalTitle,
+        book.portugueseTitle,
         book.author,
         book.description,
         book.aura,

@@ -1,6 +1,6 @@
 import { matchesFilters, resolveSearchTerm } from "./search-policy.js";
 import { BosqueLibraryDb } from "./library-db.js";
-import { OpenLibraryCatalogApi } from "./open-library-api.js";
+import { OpenLibraryCatalogApi, translateBookTitle } from "./open-library-api.js";
 
 const UI_STATE_KEY = "ui-state";
 const FAVORITES_KEY = "favorites";
@@ -8,7 +8,7 @@ const RECENT_QUERIES_KEY = "recent-queries";
 const READING_STATUS_KEY = "reading-status";
 
 const buildQueryId = ({ query, page, limit, filters }) => {
-    return `portuguese-titles-v1::${query}::${page}::${limit}::${JSON.stringify(filters || {})}`;
+    return `portuguese-titles-v2::${query}::${page}::${limit}::${JSON.stringify(filters || {})}`;
 };
 
 export class BosqueCatalogApi {
@@ -60,7 +60,19 @@ export class BosqueCatalogApi {
             const storedBooks = await this.database.searchBooks(resolveSearchTerm(query), 1000).catch(() => []);
 
             signal?.throwIfAborted();
-            const localBooks = storedBooks.filter(book => book.titleLanguage === "en" && matchesFilters(book, filters));
+            const localBooks = storedBooks
+                .filter(book => book.title && matchesFilters(book, filters))
+                .map(book => {
+                    const originalTitle = book.originalTitle || book.title;
+                    const portugueseTitle = book.portugueseTitle || translateBookTitle(originalTitle);
+
+                    return {
+                        ...book,
+                        title: portugueseTitle,
+                        titleLanguage: "pt",
+                        titleNote: portugueseTitle !== originalTitle ? `Título original: ${originalTitle}` : "Título em português"
+                    };
+                });
             if (localBooks.length > 0) {
                 return {
                     total: localBooks.length,
